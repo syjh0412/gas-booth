@@ -209,18 +209,29 @@
     if (!single && !sel.length) { location.hash = '#home'; setTimeout(function () { toast('먼저 실험을 하나 이상 골라 주세요.'); }, 50); return; }
     deck = buildDeck(single); pos = 0;
     var list = single ? [BY[single]] : sel.map(function (c) { return BY[c]; });
-    var opts = (single ? '' : '<option value="0">처음 안내</option>') + list.map(function (e) {
-      var idx = deck.findIndex(function (s) { return s.e === e; });
-      return '<option value="' + idx + '">' + e.code + ' ' + esc(e.title) + '</option>';
-    }).join('');
+    var opts;
+    if (single) {
+      opts = GROUPS.map(function (g) {
+        return '<optgroup label="' + g[1] + '">' + EX.filter(function (e) { return e.cat === g[0]; }).map(function (e) {
+          return '<option value="' + e.code + '"' + (e.code === single ? ' selected' : '') + '>' + e.code + ' ' + esc(e.title) + (sel.indexOf(e.code) >= 0 ? ' ✓' : '') + '</option>';
+        }).join('') + '</optgroup>';
+      }).join('');
+    } else {
+      opts = '<option value="0">처음 안내</option>' + list.map(function (e) {
+        var idx = deck.findIndex(function (s) { return s.e === e; });
+        return '<option value="' + idx + '">' + e.code + ' ' + esc(e.title) + '</option>';
+      }).join('');
+    }
     app.innerHTML = '<div class="deck"><div class="dbar"><a class="btn sm" href="#home">처음으로</a>' +
-      '<label class="sr" for="jump">부스로 이동</label><select id="jump">' + opts + '</select><span class="sp"></span>' +
+      '<label class="sr" for="jump">다른 실험으로 이동</label><select id="jump">' + opts + '</select><span class="sp"></span>' +
       '<button class="btn sm" id="prev" aria-label="이전 슬라이드">이전</button><span class="pg" id="pg" aria-live="polite"></span><button class="btn sm" id="next" aria-label="다음 슬라이드">다음</button>' +
       '<button class="btn sm" id="full">전체 화면</button></div><div class="viewport" id="vp"><div class="stage" id="stage"></div></div></div>';
     document.body.style.overflow = 'hidden';
     document.getElementById('prev').onclick = function () { go(pos - 1); };
     document.getElementById('next').onclick = function () { go(pos + 1); };
-    document.getElementById('jump').onchange = function () { go(parseInt(this.value, 10)); this.blur(); };
+    document.getElementById('jump').onchange = function () {
+      if (single) { location.hash = '#slides/' + this.value; } else { go(parseInt(this.value, 10)); this.blur(); }
+    };
     document.getElementById('full').onclick = function () {
       var el = document.documentElement;
       if (document.fullscreenElement) { document.exitFullscreen(); } else if (el.requestFullscreen) { el.requestFullscreen().catch(function () { toast('이 브라우저에서는 전체 화면을 쓸 수 없습니다.'); }); }
@@ -241,8 +252,10 @@
     document.getElementById('prev').disabled = pos === 0;
     document.getElementById('next').disabled = pos === deck.length - 1;
     var j = document.getElementById('jump'), best = 0;
-    Array.prototype.forEach.call(j.options, function (o) { if (parseInt(o.value, 10) <= pos) { best = o.value; } });
-    j.value = best;
+    if (single) { j.value = single; } else {
+      Array.prototype.forEach.call(j.options, function (o) { if (parseInt(o.value, 10) <= pos) { best = o.value; } });
+      j.value = best;
+    }
     var holder = st.querySelector('[data-sim]');
     if (holder) { sim = new Sim(holder, holder.getAttribute('data-sim')); }
   }
