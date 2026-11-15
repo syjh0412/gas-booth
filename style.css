@@ -78,8 +78,10 @@ a { color: inherit; }
 .s-head .code { flex: none; width: 76px; height: 76px; border-radius: 50%; background: var(--yel); color: var(--ink); border: 4px solid var(--ink); display: flex; align-items: center; justify-content: center; font-family: var(--ft); font-size: 32px; }
 .s-head .ttl { font-family: var(--ft); font-size: 44px; line-height: 1.1; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .steps-nav { display: flex; gap: 6px; }
-.steps-nav span { font-size: 17px; font-weight: 700; padding: 4px 12px; border-radius: 16px; border: 2px solid rgba(255,255,255,.6); color: #fff; }
-.steps-nav span.cur { background: #fff; border-color: #fff; }
+.steps-nav button { font-family: inherit; font-size: 19px; font-weight: 700; min-height: 46px; padding: 4px 16px; border-radius: 23px; border: 2px solid rgba(255,255,255,.7); background: transparent; color: #fff; cursor: pointer; }
+.steps-nav button:hover { background: rgba(255,255,255,.22); }
+.steps-nav button:focus-visible { outline: 4px solid #FFD43B; outline-offset: 2px; }
+.steps-nav button.cur { background: #fff; border-color: #fff; }
 .s-body { flex: 1; min-height: 0; padding: 26px 40px 30px; display: flex; gap: 28px; }
 .box { background: #fff; border: 4px solid var(--ink); border-radius: 28px; padding: 22px 26px; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
 .pill { align-self: flex-start; font-family: var(--ft); font-size: 26px; color: #fff; padding: 4px 20px; border-radius: 22px; line-height: 1.3; }

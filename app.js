@@ -130,7 +130,7 @@
   function head(e, k) {
     var c = CATS[e.cat];
     return '<div class="s-head" style="background:' + c.main + '"><div class="code">' + e.code + '</div><div class="ttl">' + esc(e.title) + '</div>' +
-      '<div class="steps-nav" aria-hidden="true">' + STEPS.map(function (s, i) { return '<span' + (i === k ? ' class="cur" style="color:' + c.main + '"' : '') + '>' + s + '</span>'; }).join('') + '</div></div>';
+      '<nav class="steps-nav" aria-label="이 실험의 단계">' + STEPS.map(function (s, i) { return '<button type="button" data-step="' + i + '"' + (i === k ? ' class="cur" aria-current="step" style="color:' + c.main + '"' : '') + '>' + s + '</button>'; }).join('') + '</nav></div>';
   }
   function ul(items, color) { return '<ul class="list">' + items.map(function (x) { return '<li><span class="dot" style="background:' + color + '"></span><span>' + esc(x) + '</span></li>'; }).join('') + '</ul>'; }
   function slideHtml(s) {
@@ -247,8 +247,12 @@
     if (holder) { sim = new Sim(holder, holder.getAttribute('data-sim')); }
   }
   function onStageClick(ev) {
-    var o = ev.target.closest('.opt'), r = ev.target.closest('[data-reveal]');
-    if (o) {
+    var o = ev.target.closest('.opt'), r = ev.target.closest('[data-reveal]'), st = ev.target.closest('[data-step]');
+    if (st) {
+      var cur = deck[pos], k = parseInt(st.getAttribute('data-step'), 10);
+      var idx = deck.findIndex(function (d) { return d.t === 'exp' && d.e === cur.e && d.k === k; });
+      if (idx >= 0) { go(idx); }
+    } else if (o) {
       o.parentNode.querySelectorAll('.opt').forEach(function (b) { b.setAttribute('aria-pressed', b === o ? 'true' : 'false'); });
     } else if (r) {
       var items = r.parentNode.querySelectorAll('.why li'), n = r.parentNode.querySelectorAll('.why li:not(.hid)').length;
