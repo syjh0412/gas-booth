@@ -258,3 +258,10 @@ a { color: inherit; }
 .sndbtn { min-height: 46px; padding: 0 18px; border-radius: 23px; border: 3px solid var(--ink); background: #fff; font-family: inherit; font-size: 19px; font-weight: 700; cursor: pointer; }
 .sndbtn[aria-pressed="true"] { background: var(--yel); }
 .sndbtn:focus-visible { outline: 4px solid #2F4BD8; outline-offset: 2px; }
+
+/* ---------- 보너스 질문과 답 ---------- */
+.qa { border-radius: 22px; padding: 16px 22px; display: flex; flex-direction: column; gap: 8px; }
+.qa .qq { font-size: 30px; font-weight: 700; line-height: 1.35; }
+.qa .qq b { font-family: var(--ft); font-weight: 400; font-size: 34px; margin-right: 6px; }
+.qa .aa { font-size: 27px; line-height: 1.45; color: #D6336C; font-weight: 700; }
+.qa .aa.hid { visibility: hidden; }

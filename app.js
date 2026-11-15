@@ -246,10 +246,10 @@
           '<div class="box" style="flex:1"><span class="pill dark">입자 이야기</span>' +
           '<div class="story-tabs' + (e.sim.story.length > 3 ? ' many' : '') + '" role="group" aria-label="입자 이야기 단계">' + e.sim.story.map(function (x, i) { return '<button type="button" data-story="' + i + '" aria-pressed="' + (i === 0) + '">' + (i + 1) + '단계</button>'; }).join('') + '</div>' +
           '<div class="storytext' + (e.sim.story[0][1].length > 80 ? ' long' : '') + '" id="storytext" aria-live="polite">' + esc(e.sim.story[0][1]) + '</div>' +
-          '<div class="storyhint">단계를 누르면 모형이 함께 바뀌어요. ' + ({ pump: 1, syringe: 1, lung: 1 }[e.sim.kind] || (e.sim.kind === 'temp' && !e.sim.block) ? '안팎의 충돌이 같아질 때까지 분홍색 막이 움직여요. ' : '') + '슬라이더를 직접 움직여 봐도 좋아요.</div></div>';
+          '<div class="storyhint">단계를 누르면 모형이 함께 바뀌어요. ' + ({ pump: 1, syringe: 1, lung: 1, condense: 1 }[e.sim.kind] || (e.sim.kind === 'temp' && !e.sim.block) ? '안팎의 충돌이 같아질 때까지 분홍색 막이 움직여요. ' : '') + '슬라이더를 직접 움직여 봐도 좋아요.</div></div>';
       } else {
         h += '<div class="box" style="flex:1.05"><span class="pill" style="background:' + c.main + '">' + (e.cat === 'X' ? '무슨 일이 일어났을까?' : '그림으로 보기') + '</span><div class="artbox"><svg role="img" aria-label="원리 그림" viewBox="0 0 400 236">' + e.pd + '</svg></div></div>' +
-          '<div class="box" style="flex:1"><span class="pill dark">' + (e.cat === 'X' ? '힌트' : '까닭을 알아보자') + '</span><div style="font-weight:700;line-height:1.4">' + esc(e.qs[1]) + '</div>' +
+          '<div class="box" style="flex:1"><span class="pill dark">' + (e.cat === 'X' ? '힌트' : '까닭을 알아보자') + '</span><div style="font-weight:700;line-height:1.4">' + esc(e.cat === 'X' ? e.qs[0] : e.qs[1]) + '</div>' +
           '<ul class="list why" style="font-size:25px">' + e.why.map(function (x) { return '<li class="hid"><span class="dot" style="background:' + c.main + '"></span><span>' + esc(x) + '</span></li>'; }).join('') + '</ul>' +
           '<button class="btn" data-reveal style="margin-top:auto;align-self:flex-start;font-size:22px;min-height:54px">설명 한 줄씩 보기 (0/' + e.why.length + ')</button></div>';
       }
@@ -262,8 +262,12 @@
           '<div class="sframe" id="sframe">' + slideFrame(e.ws.f, false) + '</div>' +
           '<button class="btn" data-key="0" style="margin-top:auto;align-self:flex-start;font-size:22px;min-height:54px">예시 답 보기</button></div>';
       } else {
-        h += '<div class="box" style="flex:1;justify-content:center;gap:22px"><span class="pill dark">친구와 이야기해 보자</span>' + ul(e.qs, c.main) +
-          '<div style="font-size:24px;color:#5B6185;line-height:1.5">보너스 미션은 성취기준 밖의 도전이에요. 정답을 맞히는 것보다 "왜 그럴까?" 하고 궁금해하는 것이 더 중요해요.</div></div>';
+        h += '<div class="box" style="flex:1;gap:18px"><span class="pill dark">친구와 이야기한 뒤 확인해 보자</span>' +
+          e.qs.map(function (q, i) {
+            return '<div class="qa" style="background:' + c.tint + '"><div class="qq"><b style="color:' + c.main + '">Q' + (i + 1) + '</b> ' + esc(q) + '</div><div class="aa hid" data-aa>' + esc(e.ans ? e.ans[i] : '') + '</div></div>';
+          }).join('') +
+          '<div style="display:flex;align-items:center;gap:18px;margin-top:auto"><button class="btn" data-ans="0" style="font-size:22px;min-height:54px;flex:none">답 보기</button>' +
+          '<span style="font-size:21px;color:#5B6185;line-height:1.4">보너스 미션에는 이번 단원에서 배우지 않는 원리가 섞여 있어요. 자세한 내용은 나중에 배워요.</span></div></div>';
       }
     } else {
       h += '<div style="flex:1;display:flex;flex-direction:column;gap:22px;min-width:0"><div class="lawband" style="background:' + c.main + '"><small>오늘의 한 줄</small><b>' + esc(e.law) + '</b></div>' +
@@ -335,6 +339,12 @@
   function onStageClick(ev) {
     var o = ev.target.closest('.opt'), r = ev.target.closest('[data-reveal]'), st = ev.target.closest('[data-step]');
     var sb = ev.target.closest('[data-story]'), kb = ev.target.closest('[data-key]'), nb = ev.target.closest('[data-snd]');
+    var ab = ev.target.closest('[data-ans]');
+    if (ab) {
+      var show = ab.getAttribute('data-ans') !== '1'; ab.setAttribute('data-ans', show ? '1' : '0'); ab.textContent = show ? '답 숨기기' : '답 보기';
+      document.querySelectorAll('[data-aa]').forEach(function (x) { x.classList.toggle('hid', !show); });
+      return;
+    }
     if (snd.on) { sndEnsure(); }
     if (nb) {
       snd.on = !snd.on; try { localStorage.setItem('gasbooth.sound', snd.on ? '1' : '0'); } catch (e) { /* 무시 */ }
@@ -410,7 +420,7 @@
     this.cv = root.querySelector('canvas'); this.ctx = this.cv.getContext('2d'); this.slider = root.querySelector('input');
     this.bub = []; this.esc = []; this.L = []; this.Rp = []; this.hIn = []; this.hOut = []; this.hAll = []; this.sparks = [];
     this.XR = SXM; this.m = SXM; this.T = 1; this.NL = 0; this.NR = 0;
-    this.hasR = { pump: 1, syringe: 1, lung: 1, leak: 1 }[this.kind] === 1 || (this.kind === 'temp' && !cfg.block);
+    this.hasR = { pump: 1, syringe: 1, lung: 1, leak: 1, condense: 1 }[this.kind] === 1 || (this.kind === 'temp' && !cfg.block);
     this.apply(cfg.start / 100); this.XR = this.XRt; this.m = this.meq(); this.sync(true);
     this.slider.addEventListener('input', function () { self.apply(parseInt(self.slider.value, 10) / 100); });
     this.last = performance.now();
@@ -424,6 +434,7 @@
     if (k === 'pump') { this.NL = 8; this.NR = Math.round(22 - 18 * v); }
     else if (k === 'syringe') { this.NL = 8; this.NR = 14; this.XRt = 350 + (SXM - 350) * v; }
     else if (k === 'press') { this.NL = 9; this.mt = 540 - 290 * v; }
+    else if (k === 'condense') { this.NL = Math.round(14 - 11 * v); }
     else if (k === 'lung') { this.NR = 11; this.XRt = 490 + (SXM - 490) * v; }
     else if (k === 'temp') { this.NL = 9; this.T = 0.5 + v; }
     else if (k === 'doll') {
@@ -440,6 +451,7 @@
     if (k === 'pump' || k === 'syringe') { x = SX0 + (this.XR - SX0) * this.NL / (this.NL + this.NR); }
     else if (k === 'press') { x = this.mt; }
     else if (k === 'lung') { x = this.XR - 300; }
+    else if (k === 'condense') { x = SX0 + this.NL * 30; }
     else if (k === 'temp') { x = SX0 + 290 * this.T; }
     else if (k === 'doll') { x = SX0 + (590 - SX0) * Math.min(1, this.NL * this.T / 10); }
     else if (k === 'leak') { x = 430; }
@@ -460,6 +472,7 @@
   };
   Sim.prototype.sync = function (first) {
     if (this.kind === 'lung') { this.NL = Math.max(3, Math.round((this.m - SX0) * this.NR / 300)); }
+    if (this.kind === 'condense') { this.NR = Math.max(2, Math.round((this.XR - this.m) / 30)); }
     if (this.kind === 'temp' && this.hasR) { this.NR = Math.max(2, Math.round((this.XR - this.m) * 9 / 290)); }
     this.fill(this.L, this.NL, SX0, this.m, first ? null : (this.kind === 'lung' ? 'L' : null));
     if (this.hasR) { this.fill(this.Rp, this.NR, this.m, this.XR, first ? null : 'R'); }
@@ -509,7 +522,7 @@
       c.fillRect(m, SY0, XR - m, H);
     }
     c.lineWidth = 4; c.strokeStyle = '#1B1F3B';
-    var openL = k === 'lung', openR = (k === 'temp' && this.hasR) || k === 'leak' || (k === 'temp' && cfg.block === 'water');
+    var openL = k === 'lung', openR = (k === 'temp' && this.hasR) || k === 'leak' || k === 'condense' || (k === 'temp' && cfg.block === 'water');
     c.beginPath(); c.moveTo(SX0, SY0); c.lineTo(XR, SY0); c.moveTo(SX0, SY1); c.lineTo(XR, SY1); c.stroke();
     c.setLineDash(openL ? [9, 8] : []); c.beginPath(); c.moveTo(SX0, SY0); c.lineTo(SX0, SY1); c.stroke();
     c.setLineDash(openR ? [9, 8] : []); c.beginPath(); c.moveTo(XR, SY0); c.lineTo(XR, k === 'doll' ? SY1 - 46 : SY1); c.stroke(); c.setLineDash([]);
@@ -537,6 +550,10 @@
       for (var a = 0; a < 6; a++) { var an = a * Math.PI / 3; c.beginPath(); c.moveTo(s.x + Math.cos(an) * r1, s.y + Math.sin(an) * r1); c.lineTo(s.x + Math.cos(an) * r2, s.y + Math.sin(an) * r2); c.stroke(); }
     }
     c.globalAlpha = 1;
+    if (k === 'condense') {
+      c.fillStyle = '#2F8FE8';
+      for (i = 0; i < 14 - this.L.length; i++) { c.beginPath(); c.arc(SX0 + 12 + i * 9, SY1 - 9, 5, 0, Math.PI * 2); c.fill(); }
+    }
     this.dots(this.L, this.colorL());
     if (this.esc.length) {
       var D = 1700, doll = k === 'doll', hx = doll ? XR - PR : m, hy = doll ? SY1 - 23 : SY1 - 35, ox = doll ? XR + 28 : m + 46, self2 = this;
@@ -599,7 +616,7 @@
   }
   function wsCard(e, d, key) {
     var w = e.ws, bonus = e.cat === 'X', n = 0, num = function () { n++; return '<i>' + n + '</i>'; };
-    var std = bonus ? '보너스 미션 · 성취기준 밖 도전' : '[' + e.std + ']' + (d <= 2 ? ' ' + STDS[e.std] : '');
+    var std = bonus ? '보너스 미션 · 한 걸음 더' : '[' + e.std + ']' + (d <= 2 ? ' ' + STDS[e.std] : '');
     var headHtml = '<div class="whead"><span class="wc">' + e.code + '</span><span class="wt">' + esc(e.title) + '</span><span class="wstd">' + esc(std) + '</span><span class="stamp">도장</span></div>';
     var obsN = { 1: 3, 2: 2, 3: 2, 4: 1, 6: 1 }[d];
     var meas = w.measure && d <= 4 ? '<div class="wmeas">' + w.measure.map(function (m) { return '<span>' + m + ' <span class="blank">&nbsp;</span> cm</span>'; }).join('') + '</div>' : '';
