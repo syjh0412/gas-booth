@@ -36,6 +36,44 @@
     toastTimer = setTimeout(function () { t.remove(); }, ms || 2600);
   }
 
+  /* ---------- QR 코드 ---------- */
+  function siteUrl() { return location.origin + location.pathname; }
+  function qrCanvas(text, px) {
+    var q = window.qrcode(0, 'M'); q.addData(text); q.make();
+    var n = q.getModuleCount(), quiet = 4, cell = Math.max(2, Math.floor(px / (n + quiet * 2))), size = (n + quiet * 2) * cell;
+    var cv = document.createElement('canvas'); cv.width = size; cv.height = size;
+    var c = cv.getContext('2d'); c.fillStyle = '#FFFFFF'; c.fillRect(0, 0, size, size); c.fillStyle = '#000000';
+    for (var r = 0; r < n; r++) { for (var k = 0; k < n; k++) { if (q.isDark(r, k)) { c.fillRect((k + quiet) * cell, (r + quiet) * cell, cell, cell); } } }
+    return cv;
+  }
+  function closeModal() { var m = document.querySelector('.modal-bg'); if (m) { m.remove(); } }
+  function shareModal() {
+    closeModal();
+    var url = shareUrl(), bg = document.createElement('div');
+    bg.className = 'modal-bg';
+    bg.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mdt"><h2 id="mdt">이 구성 공유하기</h2>' +
+      '<p>지금 고른 실험 ' + sel.length + '개가 선택된 상태로 열리는 주소입니다. QR 코드를 화면에 띄우거나 인쇄해서 학생에게 보여 주세요.</p>' +
+      '<div class="qrbig" id="qrbig"></div><label class="sr" for="surl">공유 주소</label><input id="surl" readonly value="' + esc(url) + '">' +
+      '<div class="mbtns"><button class="btn pri sm" id="mcopy">주소 복사</button><button class="btn yel sm" id="msave">QR 이미지 저장</button><button class="btn sm" id="mclose">닫기</button></div>' +
+      '<p class="mmsg" id="mmsg" role="status"></p></div>';
+    document.body.appendChild(bg);
+    var big = qrCanvas(url, 720); big.setAttribute('role', 'img'); big.setAttribute('aria-label', '공유 주소 QR 코드');
+    document.getElementById('qrbig').appendChild(big);
+    var msg = document.getElementById('mmsg'), inp = document.getElementById('surl');
+    document.getElementById('mclose').onclick = closeModal;
+    bg.addEventListener('click', function (ev) { if (ev.target === bg) { closeModal(); } });
+    document.getElementById('mcopy').onclick = function () {
+      var manual = function () { inp.focus(); inp.select(); msg.textContent = '주소를 선택했습니다. Ctrl+C로 복사하세요.'; };
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(function () { msg.textContent = '주소를 복사했습니다.'; }, manual); } else { manual(); }
+    };
+    document.getElementById('msave').onclick = function () {
+      var a = document.createElement('a'); a.download = '기체실험부스_QR.png'; a.href = big.toDataURL('image/png');
+      document.body.appendChild(a); a.click(); a.remove(); msg.textContent = 'QR 이미지를 저장했습니다.';
+    };
+    document.getElementById('mclose').focus();
+  }
+  document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape') { closeModal(); } });
+
   /* ---------- 작은 그림 ---------- */
   function face(x, y, r) {
     return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="#FFD43B" stroke="#1B1F3B" stroke-width="3"/>' +
@@ -49,8 +87,9 @@
     stopSim(); document.body.style.overflow = '';
     var h = '<div class="home">';
     h += '<header class="hero"><svg class="dots" aria-hidden="true" viewBox="0 0 300 170">' + face(40, 50, 18) + face(120, 110, 26) + face(210, 46, 14) + face(262, 120, 20) + face(170, 150, 10) + '</svg>' +
-      '<span class="tag">중학교 1학년 과학 · 기체의 성질</span><h1>기체 실험 부스</h1>' +
-      '<p>압력, 보일 법칙, 샤를 법칙을 눈으로 보고 입자로 설명하는 실험 ' + EX.length + '가지. 할 실험만 골라서 슬라이드로 설명하고, 고른 실험의 활동지만 인쇄하세요.</p></header>';
+      '<div class="htext"><span class="tag">중학교 1학년 과학 · 기체의 성질</span><h1>기체 실험 부스</h1>' +
+      '<p>압력, 보일 법칙, 샤를 법칙을 눈으로 보고 입자로 설명하는 실험 ' + EX.length + '가지. 할 실험만 골라서 슬라이드로 설명하고, 고른 실험의 활동지만 인쇄하세요.</p></div>' +
+      '<div class="hqr"><div id="hqr"></div><span>휴대폰으로 열기</span></div></header>';
     h += '<section class="panel"><h2>오늘의 도착점 (2022 개정 교육과정 성취기준)</h2><div class="stds">';
     [['9과06-01', 'P'], ['9과06-02', 'B'], ['9과06-03', 'C']].forEach(function (s) {
       h += '<div class="std" style="background:' + CATS[s[1]].tint + '"><b style="color:' + CATS[s[1]].main + '">[' + s[0] + '] ' + CATS[s[1]].name.replace(' 부스', '') + '</b>' + esc(STDS[s[0]]) + '</div>';
@@ -60,7 +99,7 @@
       '<li><span class="n">1</span><span><b>실험 고르기</b><br>준비할 수 있는 실험에 체크합니다. 선택은 이 기기에 저장됩니다.</span></li>' +
       '<li><span class="n">2</span><span><b>슬라이드 보기</b><br>고른 실험만 순서대로 보여 줍니다. 부스 태블릿에는 "이 부스만 보기"를 띄워 두세요.</span></li>' +
       '<li><span class="n">3</span><span><b>활동지 인쇄</b><br>고른 실험만, A4 한 장에 1·2·3·4·6칸 중에서 골라 인쇄합니다.</span></li>' +
-      '<li><span class="n">4</span><span><b>이 구성 공유하기</b><br>지금 고른 실험 구성을 주소로 복사합니다. 학생이나 동료 선생님이 그 주소를 열면 같은 실험이 선택된 상태로 열립니다.</span></li></ol></section>';
+      '<li><span class="n">4</span><span><b>이 구성 공유하기</b><br>지금 고른 실험 구성을 주소와 QR 코드로 만듭니다. 학생이나 동료 선생님이 열면 같은 실험이 선택된 상태로 열립니다.</span></li></ol></section>';
     h += '<div class="tools"><button class="btn sm" data-act="all">전체 선택</button><button class="btn sm" data-act="none">전체 해제</button><button class="btn sm" data-act="sample">예시 구성 (12개)</button></div>';
     GROUPS.forEach(function (g) {
       var c = CATS[g[0]], list = EX.filter(function (e) { return e.cat === g[0]; });
@@ -80,6 +119,8 @@
     h += '<p class="footnote">성취기준과 활동지 수준은 2022 개정 과학과 교육과정과 중학교 과학 1 교과서를 참고했습니다. 실험 전에 반드시 예비 실험을 하고, 안전 약속을 학생과 함께 확인하세요.</p></div>';
     h += '<div class="bar"><span class="cnt" id="cnt"></span><a class="btn pri" href="#slides" id="goSlides">슬라이드 보기</a><a class="btn yel" href="#print" id="goPrint">활동지 인쇄</a><button class="btn" data-act="share">이 구성 공유하기</button></div>';
     app.innerHTML = h;
+    var hq = qrCanvas(siteUrl(), 360); hq.setAttribute('role', 'img'); hq.setAttribute('aria-label', '이 사이트 주소 QR 코드');
+    document.getElementById('hqr').appendChild(hq);
     updateCount();
   }
   function updateCount() {
@@ -118,9 +159,7 @@
     else if (act === 'sample') { setSel(SAMPLE); toast('예시 구성 12개를 선택했습니다.'); }
     else if (act === 'share') {
       if (!sel.length) { toast('먼저 실험을 하나 이상 골라 주세요.'); return; }
-      var url = shareUrl();
-      var fallback = function () { toast('아래 주소를 복사하세요.<input readonly value="' + esc(url) + '" aria-label="공유 주소">', 12000); var i = document.querySelector('.toast input'); if (i) { i.select(); } };
-      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(function () { toast('주소를 복사했습니다. 카페 글이나 메신저에 붙여 넣으면, 받은 사람이 열었을 때 지금 고른 실험 ' + sel.length + '개가 선택된 상태로 열립니다.<input readonly value="' + esc(url) + '" aria-label="공유 주소">', 9000); }, fallback); } else { fallback(); }
+      shareModal();
     }
   });
 
@@ -442,6 +481,7 @@
 
   /* ================= 라우터 ================= */
   function route() {
+    closeModal();
     var hsh = location.hash.replace(/^#/, ''), oldToast = document.querySelector('.toast');
     if (oldToast) { oldToast.remove(); }
     if (document.fullscreenElement && hsh.indexOf('slides') !== 0) { document.exitFullscreen(); }
