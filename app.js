@@ -84,6 +84,11 @@
   }
   function updateCount() {
     var c = document.getElementById('cnt'); if (c) { c.textContent = '선택한 실험 ' + sel.length + '개'; }
+    document.querySelectorAll('[data-group]').forEach(function (b) {
+      var full = groupFull(b.getAttribute('data-group'));
+      b.textContent = full ? '이 묶음 모두 해제' : '이 묶음 모두 선택';
+      b.setAttribute('aria-pressed', full ? 'true' : 'false');
+    });
   }
   function setSel(list) {
     sel = order(list); saveSel();
@@ -93,6 +98,7 @@
     });
     updateCount();
   }
+  function groupFull(g) { return EX.filter(function (e) { return e.cat === g; }).every(function (e) { return sel.indexOf(e.code) >= 0; }); }
   app.addEventListener('change', function (ev) {
     var card = ev.target.closest && ev.target.closest('.card');
     if (card && ev.target.type === 'checkbox') {
@@ -105,7 +111,8 @@
     var b = ev.target.closest && ev.target.closest('[data-act],[data-group]'); if (!b) { return; }
     var act = b.getAttribute('data-act'), grp = b.getAttribute('data-group');
     if (grp) {
-      setSel(sel.concat(EX.filter(function (e) { return e.cat === grp; }).map(function (e) { return e.code; })));
+      var codes = EX.filter(function (e) { return e.cat === grp; }).map(function (e) { return e.code; });
+      if (groupFull(grp)) { setSel(sel.filter(function (c) { return codes.indexOf(c) < 0; })); } else { setSel(sel.concat(codes)); }
     } else if (act === 'all') { setSel(EX.map(function (e) { return e.code; })); }
     else if (act === 'none') { setSel([]); }
     else if (act === 'sample') { setSel(SAMPLE); toast('예시 구성 12개를 선택했습니다.'); }

@@ -44,6 +44,7 @@ a { color: inherit; }
 .group { margin-top: 30px; }
 .ghead { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 12px; }
 .ghead h2 { font-family: var(--ft); font-weight: 400; font-size: 30px; margin: 0; padding: 4px 18px; border-radius: 22px; color: #fff; }
+.ghead .btn[aria-pressed="true"] { background: var(--yel); }
 .ghead .gsub { font-size: 15px; color: var(--muted); flex: 1; min-width: 200px; }
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
 .card { position: relative; background: #fff; border: 3px solid var(--line); border-radius: 22px; display: flex; flex-direction: column; overflow: hidden; }
