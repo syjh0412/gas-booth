@@ -242,7 +242,7 @@
         '<div class="note">활동지에 내 예상을 표시하고, 실험으로 확인하자!</div></div>';
     } else if (s.k === 4) {
       if (e.sim) {
-        h += '<div class="box" style="flex:1.55"><span class="pill" style="background:' + c.main + '">입자 모형으로 보기</span><div class="sim" data-sim="1"></div></div>' +
+        h += '<div class="box" style="flex:1.55"><div class="simhead"><span class="pill" style="background:' + c.main + '">입자 모형으로 보기</span><button type="button" class="sndbtn" data-snd aria-pressed="' + snd.on + '">' + (snd.on ? '소리 켜짐' : '소리 꺼짐') + '</button></div><div class="sim" data-sim="1"></div></div>' +
           '<div class="box" style="flex:1"><span class="pill dark">입자 이야기</span>' +
           '<div class="story-tabs" role="group" aria-label="입자 이야기 단계">' + e.sim.story.map(function (x, i) { return '<button type="button" data-story="' + i + '" aria-pressed="' + (i === 0) + '">' + (i + 1) + '단계</button>'; }).join('') + '</div>' +
           '<div class="storytext" id="storytext" aria-live="polite">' + esc(e.sim.story[0][1]) + '</div>' +
@@ -334,8 +334,13 @@
   }
   function onStageClick(ev) {
     var o = ev.target.closest('.opt'), r = ev.target.closest('[data-reveal]'), st = ev.target.closest('[data-step]');
-    var sb = ev.target.closest('[data-story]'), kb = ev.target.closest('[data-key]');
-    if (sb) {
+    var sb = ev.target.closest('[data-story]'), kb = ev.target.closest('[data-key]'), nb = ev.target.closest('[data-snd]');
+    if (snd.on) { sndEnsure(); }
+    if (nb) {
+      snd.on = !snd.on; try { localStorage.setItem('gasbooth.sound', snd.on ? '1' : '0'); } catch (e) { /* 무시 */ }
+      if (snd.on && !sndEnsure()) { snd.on = false; toast('이 브라우저에서는 소리를 낼 수 없습니다.'); }
+      sndLabel(nb); if (snd.on) { setTimeout(function () { snd.last = 0; sndTick(480, 0.05); }, 60); }
+    } else if (sb) {
       var si = parseInt(sb.getAttribute('data-story'), 10), story = deck[pos].e.sim.story;
       sb.parentNode.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b === sb ? 'true' : 'false'); });
       document.getElementById('storytext').textContent = story[si][1];
@@ -366,6 +371,32 @@
     else if (ev.key === 'ArrowLeft' || ev.key === 'PageUp') { ev.preventDefault(); go(pos - 1); }
   });
   window.addEventListener('resize', fit);
+
+  /* ================= 소리 (입자 충돌음) ================= */
+  var snd = { on: false, ctx: null, last: 0 };
+  try { snd.on = localStorage.getItem('gasbooth.sound') === '1'; } catch (e) { /* 무시 */ }
+  function sndEnsure() {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) { return false; }
+    if (!snd.ctx) { try { snd.ctx = new AC(); } catch (e) { return false; } }
+    if (snd.ctx.state === 'suspended') { snd.ctx.resume(); }
+    return true;
+  }
+  function sndTick(freq, vol) {
+    if (!snd.on || !snd.ctx || snd.ctx.state !== 'running') { return; }
+    var t = snd.ctx.currentTime; if (t - snd.last < 0.08) { return; } snd.last = t;
+    var o = snd.ctx.createOscillator(), g = snd.ctx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * 0.7, t + 0.07);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    o.connect(g); g.connect(snd.ctx.destination); o.start(t); o.stop(t + 0.1);
+  }
+  function sndPop() {
+    if (!snd.on || !snd.ctx || snd.ctx.state !== 'running') { return; }
+    var t = snd.ctx.currentTime, o = snd.ctx.createOscillator(), g = snd.ctx.createGain();
+    o.type = 'triangle'; o.frequency.setValueAtTime(260, t); o.frequency.exponentialRampToValueAtTime(60, t + 0.22);
+    g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.16, t + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.28);
+    o.connect(g); g.connect(snd.ctx.destination); o.start(t); o.stop(t + 0.3);
+  }
+  function sndLabel(b) { b.setAttribute('aria-pressed', snd.on ? 'true' : 'false'); b.textContent = snd.on ? '소리 켜짐' : '소리 꺼짐'; }
 
   /* ================= 입자 모형 ================= */
   function stopSim() { if (sim) { sim.stop(); sim = null; } }
@@ -425,8 +456,8 @@
     var i, p, self = this;
     for (i = 0; i < arr.length; i++) {
       p = arr[i]; p.x += p.dx * sp * dt; p.y += p.dy * sp * dt;
-      if (p.x < xa + PR) { if (p.dx < 0) { if (side === 'R') { self.hOut.push(now); self.sparks.push({ x: xa, y: p.y, t: now }); } else { self.hAll.push(now); } } p.x = xa + PR; p.dx = Math.abs(p.dx); }
-      if (p.x > xb - PR) { if (p.dx > 0 && side === 'L') { self.hIn.push(now); self.hAll.push(now); self.sparks.push({ x: xb, y: p.y, t: now }); } p.x = xb - PR; p.dx = -Math.abs(p.dx); }
+      if (p.x < xa + PR) { if (p.dx < 0) { if (side === 'R') { self.hOut.push(now); self.sparks.push({ x: xa, y: p.y, t: now }); sndTick(300, 0.03); } else { self.hAll.push(now); if (self.kind === 'count') { sndTick(430, 0.035); } } } p.x = xa + PR; p.dx = Math.abs(p.dx); }
+      if (p.x > xb - PR) { if (p.dx > 0 && side === 'L') { self.hIn.push(now); self.hAll.push(now); self.sparks.push({ x: xb, y: p.y, t: now }); sndTick(self.kind === 'count' ? 430 : 480 * (self.kind === 'temp' || self.kind === 'leak' ? 0.6 + 0.5 * self.T : 1), 0.04); } p.x = xb - PR; p.dx = -Math.abs(p.dx); }
       if (p.y < SY0 + PR) { if (p.dy < 0 && side === 'L') { self.hAll.push(now); } p.y = SY0 + PR; p.dy = Math.abs(p.dy); }
       if (p.y > SY1 - PR) { if (p.dy > 0 && side === 'L') { self.hAll.push(now); } p.y = SY1 - PR; p.dy = -Math.abs(p.dy); }
     }
@@ -476,6 +507,7 @@
       if (k === 'leak') { c.moveTo(m, SY0); c.lineTo(m, SY1 - 70); } else { c.moveTo(m, SY0); c.lineTo(m, SY1); }
       c.stroke();
     }
+    if (cfg.pop) { if (this.v >= 0.9 && !this.popped) { this.popped = true; sndPop(); } else if (this.v < 0.9) { this.popped = false; } }
     if (cfg.pop && this.v >= 0.9) {
       c.fillStyle = '#1B1F3B'; c.save(); c.translate(XR - 150, SY0 - 16); c.rotate(-0.28); c.fillRect(0, -8, 150, 12); c.restore();
       c.fillStyle = '#D6336C'; c.font = '700 30px "Jua", "Noto Sans KR", sans-serif'; c.textAlign = 'center'; c.fillText('펑!', XR - 60, 30);

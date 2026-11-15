@@ -250,3 +250,9 @@ a { color: inherit; }
   .psheet { box-shadow: none; break-after: page; page-break-after: always; margin: 0; break-inside: avoid; }
   .psheet:last-child { break-after: auto; page-break-after: auto; }
 }
+
+/* ---------- 소리 버튼 ---------- */
+.simhead { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.sndbtn { min-height: 46px; padding: 0 18px; border-radius: 23px; border: 3px solid var(--ink); background: #fff; font-family: inherit; font-size: 19px; font-weight: 700; cursor: pointer; }
+.sndbtn[aria-pressed="true"] { background: var(--yel); }
+.sndbtn:focus-visible { outline: 4px solid #2F4BD8; outline-offset: 2px; }
