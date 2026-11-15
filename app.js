@@ -244,8 +244,8 @@
       if (e.sim) {
         h += '<div class="box" style="flex:1.55"><div class="simhead"><span class="pill" style="background:' + c.main + '">입자 모형으로 보기</span><button type="button" class="sndbtn" data-snd aria-pressed="' + snd.on + '">' + (snd.on ? '소리 켜짐' : '소리 꺼짐') + '</button></div><div class="sim" data-sim="1"></div></div>' +
           '<div class="box" style="flex:1"><span class="pill dark">입자 이야기</span>' +
-          '<div class="story-tabs" role="group" aria-label="입자 이야기 단계">' + e.sim.story.map(function (x, i) { return '<button type="button" data-story="' + i + '" aria-pressed="' + (i === 0) + '">' + (i + 1) + '단계</button>'; }).join('') + '</div>' +
-          '<div class="storytext" id="storytext" aria-live="polite">' + esc(e.sim.story[0][1]) + '</div>' +
+          '<div class="story-tabs' + (e.sim.story.length > 3 ? ' many' : '') + '" role="group" aria-label="입자 이야기 단계">' + e.sim.story.map(function (x, i) { return '<button type="button" data-story="' + i + '" aria-pressed="' + (i === 0) + '">' + (i + 1) + '단계</button>'; }).join('') + '</div>' +
+          '<div class="storytext' + (e.sim.story[0][1].length > 80 ? ' long' : '') + '" id="storytext" aria-live="polite">' + esc(e.sim.story[0][1]) + '</div>' +
           '<div class="storyhint">단계를 누르면 모형이 함께 바뀌어요. ' + ({ pump: 1, syringe: 1, lung: 1 }[e.sim.kind] || (e.sim.kind === 'temp' && !e.sim.block) ? '안팎의 충돌이 같아질 때까지 분홍색 막이 움직여요. ' : '') + '슬라이더를 직접 움직여 봐도 좋아요.</div></div>';
       } else {
         h += '<div class="box" style="flex:1.05"><span class="pill" style="background:' + c.main + '">' + (e.cat === 'X' ? '무슨 일이 일어났을까?' : '그림으로 보기') + '</span><div class="artbox"><svg role="img" aria-label="원리 그림" viewBox="0 0 400 236">' + e.pd + '</svg></div></div>' +
@@ -343,8 +343,8 @@
     } else if (sb) {
       var si = parseInt(sb.getAttribute('data-story'), 10), story = deck[pos].e.sim.story;
       sb.parentNode.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b === sb ? 'true' : 'false'); });
-      document.getElementById('storytext').textContent = story[si][1];
-      if (sim) { sim.setPos(story[si][0]); }
+      var stx = document.getElementById('storytext'); stx.textContent = story[si][1]; stx.classList.toggle('long', story[si][1].length > 80);
+      if (sim) { sim.setPos(story[si][0], story[si][2]); }
     } else if (kb) {
       var on = kb.getAttribute('data-key') !== '1', ex = deck[pos].e;
       kb.setAttribute('data-key', on ? '1' : '0'); kb.textContent = on ? '예시 답 숨기기' : '예시 답 보기';
@@ -408,7 +408,7 @@
       '<div class="meters"><div class="meter"><span data-m="a"></span><div class="track"><div class="fill" data-f="a"></div></div></div>' +
       '<div class="meter"><span data-m="b"></span><div class="track"><div class="fill" data-f="b" style="background:#D6336C"></div></div></div></div>';
     this.cv = root.querySelector('canvas'); this.ctx = this.cv.getContext('2d'); this.slider = root.querySelector('input');
-    this.L = []; this.Rp = []; this.hIn = []; this.hOut = []; this.hAll = []; this.sparks = [];
+    this.bub = []; this.L = []; this.Rp = []; this.hIn = []; this.hOut = []; this.hAll = []; this.sparks = [];
     this.XR = SXM; this.m = SXM; this.T = 1; this.NL = 0; this.NR = 0;
     this.hasR = { pump: 1, syringe: 1, lung: 1, leak: 1 }[this.kind] === 1 || (this.kind === 'temp' && !cfg.block);
     this.apply(cfg.start / 100); this.XR = this.XRt; this.m = this.meq(); this.sync(true);
@@ -418,7 +418,7 @@
     this.raf = requestAnimationFrame(this.loop);
   }
   Sim.prototype.stop = function () { this.alive = false; cancelAnimationFrame(this.raf); };
-  Sim.prototype.setPos = function (p) { this.slider.value = p; this.apply(p / 100); };
+  Sim.prototype.setPos = function (p, reset) { if (reset) { this.NLd = 10; } this.slider.value = p; this.apply(p / 100); };
   Sim.prototype.apply = function (v) {
     var k = this.kind; this.v = v; this.XRt = SXM; this.T = 1;
     if (k === 'pump') { this.NL = 8; this.NR = Math.round(22 - 18 * v); }
@@ -426,6 +426,12 @@
     else if (k === 'press') { this.NL = 9; this.mt = 540 - 290 * v; }
     else if (k === 'lung') { this.NR = 11; this.XRt = 490 + (SXM - 490) * v; }
     else if (k === 'temp') { this.NL = 9; this.T = 0.5 + v; }
+    else if (k === 'doll') {
+      this.T = 0.5 + v; this.XRt = 590; if (this.NLd === undefined) { this.NLd = 10; }
+      var cap = Math.max(4, Math.round(10 / this.T));
+      if (cap < this.NLd) { for (var bi = 0; bi < this.NLd - cap; bi++) { this.bub.push({ x: 600 + Math.random() * 26, y: SY1 - 26, t: performance.now() + bi * 140 }); } this.NLd = cap; sndTick(620, 0.04); }
+      this.NL = this.NLd;
+    }
     else if (k === 'leak') { this.T = 0.6 + 0.9 * v; this.NL = Math.round(18 / (0.8 + 1.2 * v)); this.NR = 7; }
     else { this.NL = 4 + Math.round(32 * v); }
   };
@@ -435,6 +441,7 @@
     else if (k === 'press') { x = this.mt; }
     else if (k === 'lung') { x = this.XR - 300; }
     else if (k === 'temp') { x = SX0 + 290 * this.T; }
+    else if (k === 'doll') { x = SX0 + (590 - SX0) * Math.min(1, this.NL * this.T / 10); }
     else if (k === 'leak') { x = 430; }
     else { x = this.XR; }
     return x;
@@ -466,7 +473,7 @@
     this.XR += (this.XRt - this.XR) * Math.min(1, dt * 7);
     this.m += (this.meq() - this.m) * Math.min(1, dt * 3.2);
     this.sync(false);
-    var hot = this.kind === 'temp' || this.kind === 'leak';
+    var hot = this.kind === 'temp' || this.kind === 'leak' || this.kind === 'doll';
     this.move(this.L, SX0, this.kind === 'count' ? this.XR : this.m, 210 * (hot ? this.T : 1), dt, now, 'L');
     if (this.hasR) { this.move(this.Rp, this.m, this.XR, 210, dt, now, 'R'); }
     [this.hIn, this.hOut, this.hAll].forEach(function (h) { while (h.length && now - h[0] > 3000) { h.shift(); } });
@@ -475,7 +482,7 @@
   };
   function mix(a, b, k) { return 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * k) + ',' + Math.round(a[1] + (b[1] - a[1]) * k) + ',' + Math.round(a[2] + (b[2] - a[2]) * k) + ')'; }
   Sim.prototype.colorL = function () {
-    if (this.kind !== 'temp' && this.kind !== 'leak') { return '#FFD43B'; }
+    if (this.kind !== 'temp' && this.kind !== 'leak' && this.kind !== 'doll') { return '#FFD43B'; }
     var cold = [140, 203, 255], mid = [255, 212, 59], hot = [255, 138, 122], t = this.T;
     return t < 1 ? mix(cold, mid, Math.max(0, (t - 0.5) / 0.5)) : mix(mid, hot, Math.min(1, (t - 1) / 0.5));
   };
@@ -489,7 +496,7 @@
   };
   Sim.prototype.draw = function (now) {
     var c = this.ctx, cfg = this.cfg, k = this.kind, m = this.m, XR = this.XR, H = SY1 - SY0, i, s;
-    var single = k === 'count', block = k === 'press' || (k === 'temp' && cfg.block);
+    var single = k === 'count', block = k === 'press' || k === 'doll' || (k === 'temp' && cfg.block);
     c.clearRect(0, 0, CW, CH); c.setLineDash([]);
     c.fillStyle = '#FFF8D9'; c.fillRect(SX0, SY0, (single ? XR : m) - SX0, H);
     if (!single) {
@@ -500,11 +507,18 @@
     var openL = k === 'lung', openR = (k === 'temp' && this.hasR) || k === 'leak' || (k === 'temp' && cfg.block === 'water');
     c.beginPath(); c.moveTo(SX0, SY0); c.lineTo(XR, SY0); c.moveTo(SX0, SY1); c.lineTo(XR, SY1); c.stroke();
     c.setLineDash(openL ? [9, 8] : []); c.beginPath(); c.moveTo(SX0, SY0); c.lineTo(SX0, SY1); c.stroke();
-    c.setLineDash(openR ? [9, 8] : []); c.beginPath(); c.moveTo(XR, SY0); c.lineTo(XR, SY1); c.stroke(); c.setLineDash([]);
+    c.setLineDash(openR ? [9, 8] : []); c.beginPath(); c.moveTo(XR, SY0); c.lineTo(XR, k === 'doll' ? SY1 - 46 : SY1); c.stroke(); c.setLineDash([]);
+    if (k === 'doll') {
+      c.font = '700 15px "Noto Sans KR", sans-serif'; c.fillStyle = '#1B1F3B'; c.textAlign = 'center'; c.fillText('구멍', XR + 24, SY1 + 2);
+      c.strokeStyle = '#2F8FE8'; c.lineWidth = 3;
+      this.bub = this.bub.filter(function (b) { return now - b.t < 1300; });
+      this.bub.forEach(function (b) { var q = (now - b.t) / 1300; if (q < 0) { return; } c.globalAlpha = 1 - q; c.beginPath(); c.arc(b.x, b.y - q * 190, 7, 0, Math.PI * 2); c.fillStyle = '#FFFFFF'; c.fill(); c.stroke(); });
+      c.globalAlpha = 1; c.strokeStyle = '#1B1F3B'; c.lineWidth = 4;
+    }
     if (k === 'syringe' || k === 'lung') { c.fillStyle = '#8A93C8'; c.fillRect(XR, SY0 - 4, 10, H + 8); c.fillStyle = '#1B1F3B'; c.fillRect(XR + 10, SY0 + H / 2 - 5, Math.max(0, CW - XR - 12), 10); }
     if (!single) {
       c.strokeStyle = '#D6336C'; c.lineWidth = 8; c.beginPath();
-      if (k === 'leak') { c.moveTo(m, SY0); c.lineTo(m, SY1 - 70); } else { c.moveTo(m, SY0); c.lineTo(m, SY1); }
+      if (k === 'leak') { c.moveTo(m, SY0); c.lineTo(m, SY1 - 70); } else if (!(k === 'doll' && XR - m < 10)) { c.moveTo(m, SY0); c.lineTo(m, SY1); }
       c.stroke();
     }
     if (cfg.pop) { if (this.v >= 0.9 && !this.popped) { this.popped = true; sndPop(); } else if (this.v < 0.9) { this.popped = false; } }
@@ -527,18 +541,21 @@
       var rl = block ? cfg.blockL : cfg.outL, rw = c.measureText(rl).width, rx = Math.min(CW - 6 - rw / 2, Math.max((m + XR) / 2, m + 14 + rw / 2));
       var lw = c.measureText(cfg.inL).width, lcx = Math.max(SX0 + 4 + lw / 2, (SX0 + m) / 2);
       if (rx - rw / 2 < lcx + lw / 2 + 14) { rx = lcx + lw / 2 + 14 + rw / 2; }
-      if (block) { c.fillText(rl, Math.min(CW - 6 - rw / 2, Math.max(rx, (m + XR) / 2)), SY0 + H / 2 + 6); } else { c.fillText(rl, Math.min(CW - 6 - rw / 2, rx), 24); }
+      if (block) { if (XR - m > rw + 16) { c.fillText(rl, (m + XR) / 2, SY0 + H / 2 + 6); } } else { c.fillText(rl, Math.min(CW - 6 - rw / 2, rx), 24); }
       c.fillStyle = '#D6336C'; var mw = c.measureText(cfg.mem).width;
-      c.fillText(cfg.mem, Math.max(6 + mw / 2, Math.min(CW - 6 - mw / 2, m)), CH - 14);
+      if (!(k === 'doll' && XR - m < 10)) { c.fillText(cfg.mem, Math.max(6 + mw / 2, Math.min(CW - 6 - mw / 2, m)), CH - 14); }
     }
     var ma = this.root.querySelector('[data-m="a"]'), mb = this.root.querySelector('[data-m="b"]'), fa = this.root.querySelector('[data-f="a"]'), fb = this.root.querySelector('[data-f="b"]');
-    var wL = Math.max(30, (single ? XR : m) - SX0), wR = Math.max(30, XR - m), hot = k === 'temp' || k === 'leak';
+    var wL = Math.max(30, (single ? XR : m) - SX0), wR = Math.max(30, XR - m), hot = k === 'temp' || k === 'leak' || k === 'doll';
     var pIn = this.L.length * (hot ? this.T : 1) / wL, pOut = this.hasR ? this.Rp.length / wR : 0;
     var pct = function (x, K) { return Math.max(3, Math.min(100, Math.round(x * K))) + '%'; };
     var word = function (x, K) { var q = x * K; return q < 28 ? '적음' : q < 55 ? '보통' : '많음'; };
     if (single) {
       ma.textContent = '입자 수 ' + this.L.length + '개'; fa.style.width = Math.round(this.L.length / 36 * 100) + '%';
       mb.textContent = '벽에 충돌하는 횟수: ' + word(pIn, 1700); fb.style.width = pct(pIn, 1700);
+    } else if (k === 'doll') {
+      ma.textContent = '인형 속 공기 입자 수 ' + this.L.length + '개'; fa.style.width = Math.round(this.L.length / 10 * 100) + '%';
+      mb.textContent = '공기의 부피 (입자 빠르기: ' + (this.T < 0.85 ? '느림' : this.T < 1.2 ? '보통' : '빠름') + ')'; fb.style.width = Math.round((m - SX0) / (590 - SX0) * 100) + '%';
     } else if (k === 'leak') {
       ma.textContent = '봉지 속 입자 수 ' + this.L.length + '개'; fa.style.width = Math.round(this.L.length / 22 * 100) + '%';
       mb.textContent = '입자 빠르기: ' + (this.T < 0.85 ? '느림' : this.T < 1.2 ? '보통' : '빠름'); fb.style.width = Math.round((this.T - 0.6) / 0.9 * 100) + '%';

@@ -141,6 +141,8 @@ a { color: inherit; }
 .story-tabs button[aria-pressed="true"] { background: var(--yel); }
 .story-tabs button:focus-visible { outline: 4px solid #2F4BD8; outline-offset: 2px; }
 .storytext { font-size: 33px; line-height: 1.5; font-weight: 700; flex: 1; }
+.storytext.long { font-size: 27px; line-height: 1.45; }
+.story-tabs.many button { font-size: 21px; min-height: 52px; }
 .storyhint { font-size: 20px; color: var(--muted); line-height: 1.4; }
 .sframe { font-size: 31px; line-height: 2; font-weight: 700; }
 .sblank { display: inline-block; border-bottom: 4px solid var(--ink); text-align: center; padding: 0 8px; line-height: 1.25; }
