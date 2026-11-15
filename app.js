@@ -173,12 +173,12 @@
   });
 
   /* ================= 슬라이드 ================= */
-  var STEPS = ['시작', '준비', '방법', '예상', '입자', '정리'];
+  var STEPS = ['시작', '준비', '방법', '예상', '입자', '설명', '정리'];
   function buildDeck(single) {
     var list = single ? [BY[single]] : sel.map(function (c) { return BY[c]; });
     var deck = [];
     if (!single) { deck.push({ t: 'cover', list: list }, { t: 'goal', list: list }, { t: 'flow' }, { t: 'talk' }); }
-    list.forEach(function (e) { for (var i = 0; i < 6; i++) { deck.push({ t: 'exp', e: e, k: i }); } });
+    list.forEach(function (e) { for (var i = 0; i < 7; i++) { deck.push({ t: 'exp', e: e, k: i }); } });
     if (!single) { deck.push({ t: 'wrap', list: list }); }
     return deck;
   }
@@ -241,15 +241,30 @@
         '<div class="bigq">' + esc(e.ws.q) + '</div><div class="opts">' + e.ws.o.map(function (x) { return '<button class="opt" aria-pressed="false">' + esc(x) + '</button>'; }).join('') + '</div>' +
         '<div class="note">활동지에 내 예상을 표시하고, 실험으로 확인하자!</div></div>';
     } else if (s.k === 4) {
-      var left;
       if (e.sim) {
-        left = '<div class="box" style="flex:1.05"><span class="pill" style="background:' + c.main + '">입자 모형으로 보기</span><div class="sim" data-sim="' + e.sim + '"></div></div>';
+        h += '<div class="box" style="flex:1.55"><span class="pill" style="background:' + c.main + '">입자 모형으로 보기</span><div class="sim" data-sim="1"></div></div>' +
+          '<div class="box" style="flex:1"><span class="pill dark">입자 이야기</span>' +
+          '<div class="story-tabs" role="group" aria-label="입자 이야기 단계">' + e.sim.story.map(function (x, i) { return '<button type="button" data-story="' + i + '" aria-pressed="' + (i === 0) + '">' + (i + 1) + '단계</button>'; }).join('') + '</div>' +
+          '<div class="storytext" id="storytext" aria-live="polite">' + esc(e.sim.story[0][1]) + '</div>' +
+          '<div class="storyhint">단계를 누르면 모형이 함께 바뀌어요. ' + ({ pump: 1, syringe: 1, lung: 1 }[e.sim.kind] || (e.sim.kind === 'temp' && !e.sim.block) ? '안팎의 충돌이 같아질 때까지 분홍색 막이 움직여요. ' : '') + '슬라이더를 직접 움직여 봐도 좋아요.</div></div>';
       } else {
-        left = '<div class="box" style="flex:1.05"><span class="pill" style="background:' + c.main + '">' + (e.cat === 'X' ? '무슨 일이 일어났을까?' : '그림으로 보기') + '</span><div class="artbox"><svg role="img" aria-label="원리 그림" viewBox="0 0 400 236">' + e.pd + '</svg></div></div>';
+        h += '<div class="box" style="flex:1.05"><span class="pill" style="background:' + c.main + '">' + (e.cat === 'X' ? '무슨 일이 일어났을까?' : '그림으로 보기') + '</span><div class="artbox"><svg role="img" aria-label="원리 그림" viewBox="0 0 400 236">' + e.pd + '</svg></div></div>' +
+          '<div class="box" style="flex:1"><span class="pill dark">' + (e.cat === 'X' ? '힌트' : '까닭을 알아보자') + '</span><div style="font-weight:700;line-height:1.4">' + esc(e.qs[1]) + '</div>' +
+          '<ul class="list why" style="font-size:25px">' + e.why.map(function (x) { return '<li class="hid"><span class="dot" style="background:' + c.main + '"></span><span>' + esc(x) + '</span></li>'; }).join('') + '</ul>' +
+          '<button class="btn" data-reveal style="margin-top:auto;align-self:flex-start;font-size:22px;min-height:54px">설명 한 줄씩 보기 (0/' + e.why.length + ')</button></div>';
       }
-      h += left + '<div class="box" style="flex:1"><span class="pill dark">' + (e.cat === 'X' ? '힌트' : '입자로 설명해 보자') + '</span><div style="font-weight:700;line-height:1.4">' + esc(e.qs[1]) + '</div>' +
-        '<ul class="list why" style="font-size:25px">' + e.why.map(function (x) { return '<li class="hid"><span class="dot" style="background:' + c.main + '"></span><span>' + esc(x) + '</span></li>'; }).join('') + '</ul>' +
-        '<button class="btn" data-reveal style="margin-top:auto;align-self:flex-start;font-size:22px;min-height:54px">설명 한 줄씩 보기 (0/' + e.why.length + ')</button></div>';
+    } else if (s.k === 5) {
+      if (e.ws.f) {
+        var drawName = e.sim ? '입자로 그리기' : '그림으로 생각하기', talkName = e.sim ? '입자로 말하기' : '문장으로 정리하기';
+        h += '<div class="box" style="flex:1"><span class="pill" style="background:' + c.main + '">' + drawName + '</span><div style="font-size:24px;line-height:1.4">' + esc(e.ws.hint) + '</div>' +
+          '<div class="artbox"><svg role="img" aria-label="활동지 그리기 칸" viewBox="0 0 400 200" id="wsvg">' + e.ws.svg + '</svg></div></div>' +
+          '<div class="box" style="flex:1.1"><span class="pill dark">' + talkName + '</span><div style="font-size:24px;font-weight:700;line-height:1.4;color:' + c.main + '">' + esc(e.qs[1]) + '</div>' +
+          '<div class="sframe" id="sframe">' + slideFrame(e.ws.f, false) + '</div>' +
+          '<button class="btn" data-key="0" style="margin-top:auto;align-self:flex-start;font-size:22px;min-height:54px">예시 답 보기</button></div>';
+      } else {
+        h += '<div class="box" style="flex:1;justify-content:center;gap:22px"><span class="pill dark">친구와 이야기해 보자</span>' + ul(e.qs, c.main) +
+          '<div style="font-size:24px;color:#5B6185;line-height:1.5">보너스 미션은 성취기준 밖의 도전이에요. 정답을 맞히는 것보다 "왜 그럴까?" 하고 궁금해하는 것이 더 중요해요.</div></div>';
+      }
     } else {
       h += '<div style="flex:1;display:flex;flex-direction:column;gap:22px;min-width:0"><div class="lawband" style="background:' + c.main + '"><small>오늘의 한 줄</small><b>' + esc(e.law) + '</b></div>' +
         '<div style="display:flex;gap:22px;flex:1;min-height:0"><div class="box" style="flex:1"><span class="pill" style="background:' + c.main + '">생활 속에서 찾아보기</span>' + ul(e.life, c.main) + '</div>' +
@@ -258,6 +273,9 @@
     return h + '</div></div>';
   }
 
+  function slideFrame(f, key) {
+    return esc(f).replace(/\[([^\]]+)\]/g, function (m, a) { return key ? '<span class="sblank ans">' + a + '</span>' : '<span class="sblank" style="min-width:' + Math.max(70, a.length * 30 + 30) + 'px">&nbsp;</span>'; });
+  }
   var deck = [], pos = 0, single = null;
   function renderSlides(code) {
     single = code && BY[code] ? code : null;
@@ -312,11 +330,22 @@
       j.value = best;
     }
     var holder = st.querySelector('[data-sim]');
-    if (holder) { sim = new Sim(holder, holder.getAttribute('data-sim')); }
+    if (holder) { sim = new Sim(holder, deck[pos].e.sim); }
   }
   function onStageClick(ev) {
     var o = ev.target.closest('.opt'), r = ev.target.closest('[data-reveal]'), st = ev.target.closest('[data-step]');
-    if (st) {
+    var sb = ev.target.closest('[data-story]'), kb = ev.target.closest('[data-key]');
+    if (sb) {
+      var si = parseInt(sb.getAttribute('data-story'), 10), story = deck[pos].e.sim.story;
+      sb.parentNode.querySelectorAll('button').forEach(function (b) { b.setAttribute('aria-pressed', b === sb ? 'true' : 'false'); });
+      document.getElementById('storytext').textContent = story[si][1];
+      if (sim) { sim.setPos(story[si][0]); }
+    } else if (kb) {
+      var on = kb.getAttribute('data-key') !== '1', ex = deck[pos].e;
+      kb.setAttribute('data-key', on ? '1' : '0'); kb.textContent = on ? '예시 답 숨기기' : '예시 답 보기';
+      document.getElementById('sframe').innerHTML = slideFrame(ex.ws.f, on);
+      document.getElementById('wsvg').innerHTML = on ? ex.ws.key : ex.ws.svg;
+    } else if (st) {
       var cur = deck[pos], k = parseInt(st.getAttribute('data-step'), 10);
       var idx = deck.findIndex(function (d) { return d.t === 'exp' && d.e === cur.e && d.k === k; });
       if (idx >= 0) { go(idx); }
@@ -340,93 +369,156 @@
 
   /* ================= 입자 모형 ================= */
   function stopSim() { if (sim) { sim.stop(); sim = null; } }
-  function Sim(root, mode) {
-    var self = this; this.mode = mode; this.alive = true;
-    var cfg = {
-      boyle: { label: '부피', min: 30, max: 100, val: 100, left: '작게', right: '크게', tip: '피스톤을 밀어 부피를 줄여 보자. 입자 수는 그대로인데 충돌 횟수는 어떻게 될까?' },
-      charles: { label: '온도', min: 1, max: 9, val: 4, left: '차갑게', right: '뜨겁게', tip: '온도를 올려 보자. 입자의 빠르기와 부피는 어떻게 될까? (피스톤은 자유롭게 움직인다)' },
-      count: { label: '입자 수', min: 4, max: 36, val: 8, left: '적게', right: '많게', tip: '입자 수를 늘려 보자. 벽에 충돌하는 횟수는 어떻게 될까?' }
-    }[mode];
-    root.innerHTML = '<canvas width="620" height="300" role="img" aria-label="상자 안에서 움직이는 기체 입자 모형"></canvas>' +
-      '<div class="ctl"><span>' + cfg.left + '</span><input type="range" min="' + cfg.min + '" max="' + cfg.max + '" value="' + cfg.val + '" step="1" aria-label="' + cfg.label + ' 조절"><span>' + cfg.right + '</span></div>' +
+  var CW = 640, CH = 300, SX0 = 20, SXM = 620, SY0 = 40, SY1 = 258, PR = 12;
+  function Sim(root, cfg) {
+    var self = this; this.cfg = cfg; this.kind = cfg.kind; this.alive = true; this.root = root;
+    root.innerHTML = '<canvas width="' + CW + '" height="' + CH + '" role="img" aria-label="' + esc(cfg.inL) + ' 입자 모형"></canvas>' +
+      '<div class="ctl"><b>' + esc(cfg.ctl) + '</b><span>' + esc(cfg.lo) + '</span><input type="range" min="0" max="100" value="' + cfg.start + '" step="1" aria-label="' + esc(cfg.ctl) + ' 조절"><span>' + esc(cfg.hi) + '</span></div>' +
       '<div class="meters"><div class="meter"><span data-m="a"></span><div class="track"><div class="fill" data-f="a"></div></div></div>' +
-      '<div class="meter"><span data-m="b"></span><div class="track"><div class="fill" data-f="b" style="background:#D6336C"></div></div></div></div>' +
-      '<div style="font-size:19px;color:#5B6185;line-height:1.35">' + cfg.tip + '</div>';
-    this.cv = root.querySelector('canvas'); this.ctx = this.cv.getContext('2d');
-    this.slider = root.querySelector('input'); this.root = root;
-    this.X0 = 20; this.Y0 = 20; this.H = 260; this.WM = 560; this.W = this.WM; this.R = 13;
-    this.ps = []; this.hits = []; this.sparks = []; this.speed = 150; this.temp = 1;
-    this.setN(mode === 'count' ? cfg.val : 14);
-    this.apply(true);
-    this.slider.addEventListener('input', function () { self.apply(false); });
+      '<div class="meter"><span data-m="b"></span><div class="track"><div class="fill" data-f="b" style="background:#D6336C"></div></div></div></div>';
+    this.cv = root.querySelector('canvas'); this.ctx = this.cv.getContext('2d'); this.slider = root.querySelector('input');
+    this.L = []; this.Rp = []; this.hIn = []; this.hOut = []; this.hAll = []; this.sparks = [];
+    this.XR = SXM; this.m = SXM; this.T = 1; this.NL = 0; this.NR = 0;
+    this.hasR = { pump: 1, syringe: 1, lung: 1, leak: 1 }[this.kind] === 1 || (this.kind === 'temp' && !cfg.block);
+    this.apply(cfg.start / 100); this.XR = this.XRt; this.m = this.meq(); this.sync(true);
+    this.slider.addEventListener('input', function () { self.apply(parseInt(self.slider.value, 10) / 100); });
     this.last = performance.now();
     this.loop = function (now) { if (!self.alive) { return; } self.step(Math.min(0.033, (now - self.last) / 1000), now); self.last = now; self.raf = requestAnimationFrame(self.loop); };
     this.raf = requestAnimationFrame(this.loop);
   }
   Sim.prototype.stop = function () { this.alive = false; cancelAnimationFrame(this.raf); };
-  Sim.prototype.setN = function (n) {
-    while (this.ps.length < n) {
-      var a = Math.random() * Math.PI * 2;
-      this.ps.push({ x: this.X0 + this.R + Math.random() * (this.W - 2 * this.R), y: this.Y0 + this.R + Math.random() * (this.H - 2 * this.R), dx: Math.cos(a), dy: Math.sin(a) });
-    }
-    this.ps.length = n;
+  Sim.prototype.setPos = function (p) { this.slider.value = p; this.apply(p / 100); };
+  Sim.prototype.apply = function (v) {
+    var k = this.kind; this.v = v; this.XRt = SXM; this.T = 1;
+    if (k === 'pump') { this.NL = 8; this.NR = Math.round(22 - 18 * v); }
+    else if (k === 'syringe') { this.NL = 8; this.NR = 14; this.XRt = 350 + (SXM - 350) * v; }
+    else if (k === 'press') { this.NL = 9; this.mt = 540 - 290 * v; }
+    else if (k === 'lung') { this.NR = 11; this.XRt = 490 + (SXM - 490) * v; }
+    else if (k === 'temp') { this.NL = 9; this.T = 0.5 + v; }
+    else if (k === 'leak') { this.T = 0.6 + 0.9 * v; this.NL = Math.round(18 / (0.8 + 1.2 * v)); this.NR = 7; }
+    else { this.NL = 4 + Math.round(32 * v); }
   };
-  Sim.prototype.apply = function (instant) {
-    var v = parseInt(this.slider.value, 10);
-    if (this.mode === 'boyle') { this.target = this.WM * v / 100; }
-    else if (this.mode === 'charles') { this.temp = 0.4 + (v - 1) * 0.15; this.target = this.WM * this.temp / 1.6; this.speed = 150 * Math.sqrt(this.temp); }
-    else { this.setN(v); this.target = this.WM; }
-    if (instant) { this.W = this.target; }
+  Sim.prototype.meq = function () {
+    var k = this.kind, x;
+    if (k === 'pump' || k === 'syringe') { x = SX0 + (this.XR - SX0) * this.NL / (this.NL + this.NR); }
+    else if (k === 'press') { x = this.mt; }
+    else if (k === 'lung') { x = this.XR - 300; }
+    else if (k === 'temp') { x = SX0 + 290 * this.T; }
+    else if (k === 'leak') { x = 430; }
+    else { x = this.XR; }
+    return x;
+  };
+  Sim.prototype.fill = function (arr, n, xa, xb, edge) {
+    while (arr.length < n) {
+      var a = Math.random() * Math.PI * 2, x = edge === 'L' ? xa + PR + 2 : edge === 'R' ? xb - PR - 2 : xa + PR + Math.random() * Math.max(1, xb - xa - 2 * PR);
+      arr.push({ x: x, y: SY0 + PR + Math.random() * (SY1 - SY0 - 2 * PR), dx: Math.cos(a), dy: Math.sin(a) });
+    }
+    if (arr.length > n) { arr.length = n; }
+  };
+  Sim.prototype.sync = function (first) {
+    if (this.kind === 'lung') { this.NL = Math.max(3, Math.round((this.m - SX0) * this.NR / 300)); }
+    if (this.kind === 'temp' && this.hasR) { this.NR = Math.max(2, Math.round((this.XR - this.m) * 9 / 290)); }
+    this.fill(this.L, this.NL, SX0, this.m, first ? null : (this.kind === 'lung' ? 'L' : null));
+    if (this.hasR) { this.fill(this.Rp, this.NR, this.m, this.XR, first ? null : 'R'); }
+  };
+  Sim.prototype.move = function (arr, xa, xb, sp, dt, now, side) {
+    var i, p, self = this;
+    for (i = 0; i < arr.length; i++) {
+      p = arr[i]; p.x += p.dx * sp * dt; p.y += p.dy * sp * dt;
+      if (p.x < xa + PR) { if (p.dx < 0) { if (side === 'R') { self.hOut.push(now); self.sparks.push({ x: xa, y: p.y, t: now }); } else { self.hAll.push(now); } } p.x = xa + PR; p.dx = Math.abs(p.dx); }
+      if (p.x > xb - PR) { if (p.dx > 0 && side === 'L') { self.hIn.push(now); self.hAll.push(now); self.sparks.push({ x: xb, y: p.y, t: now }); } p.x = xb - PR; p.dx = -Math.abs(p.dx); }
+      if (p.y < SY0 + PR) { if (p.dy < 0 && side === 'L') { self.hAll.push(now); } p.y = SY0 + PR; p.dy = Math.abs(p.dy); }
+      if (p.y > SY1 - PR) { if (p.dy > 0 && side === 'L') { self.hAll.push(now); } p.y = SY1 - PR; p.dy = -Math.abs(p.dy); }
+    }
   };
   Sim.prototype.step = function (dt, now) {
-    var i, p, R = this.R, x0 = this.X0, y0 = this.Y0, self = this;
-    this.W += (this.target - this.W) * Math.min(1, dt * 6);
-    var xr = x0 + this.W - R, hit = function (x, y) { self.hits.push(now); self.sparks.push({ x: x, y: y, t: now }); };
-    for (i = 0; i < this.ps.length; i++) {
-      p = this.ps[i]; p.x += p.dx * this.speed * dt; p.y += p.dy * this.speed * dt;
-      if (p.x < x0 + R) { p.x = x0 + R; p.dx = Math.abs(p.dx); hit(x0, p.y); }
-      if (p.x > xr) { p.x = xr; p.dx = -Math.abs(p.dx); hit(x0 + this.W, p.y); }
-      if (p.y < y0 + R) { p.y = y0 + R; p.dy = Math.abs(p.dy); hit(p.x, y0); }
-      if (p.y > y0 + this.H - R) { p.y = y0 + this.H - R; p.dy = -Math.abs(p.dy); hit(p.x, y0 + this.H); }
-    }
-    while (this.hits.length && now - this.hits[0] > 2000) { this.hits.shift(); }
-    while (this.sparks.length && now - this.sparks[0].t > 260) { this.sparks.shift(); }
+    this.XR += (this.XRt - this.XR) * Math.min(1, dt * 7);
+    this.m += (this.meq() - this.m) * Math.min(1, dt * 3.2);
+    this.sync(false);
+    var hot = this.kind === 'temp' || this.kind === 'leak';
+    this.move(this.L, SX0, this.kind === 'count' ? this.XR : this.m, 210 * (hot ? this.T : 1), dt, now, 'L');
+    if (this.hasR) { this.move(this.Rp, this.m, this.XR, 210, dt, now, 'R'); }
+    [this.hIn, this.hOut, this.hAll].forEach(function (h) { while (h.length && now - h[0] > 3000) { h.shift(); } });
+    while (this.sparks.length && now - this.sparks[0].t > 280) { this.sparks.shift(); }
     this.draw(now);
   };
-  Sim.prototype.color = function () {
-    if (this.mode !== 'charles') { return '#FFD43B'; }
-    var k = Math.max(0, Math.min(1, (this.temp - 0.4) / 1.2)), a = [140, 203, 255], b = [255, 155, 138];
-    return 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * k) + ',' + Math.round(a[1] + (b[1] - a[1]) * k) + ',' + Math.round(a[2] + (b[2] - a[2]) * k) + ')';
+  function mix(a, b, k) { return 'rgb(' + Math.round(a[0] + (b[0] - a[0]) * k) + ',' + Math.round(a[1] + (b[1] - a[1]) * k) + ',' + Math.round(a[2] + (b[2] - a[2]) * k) + ')'; }
+  Sim.prototype.colorL = function () {
+    if (this.kind !== 'temp' && this.kind !== 'leak') { return '#FFD43B'; }
+    var cold = [140, 203, 255], mid = [255, 212, 59], hot = [255, 138, 122], t = this.T;
+    return t < 1 ? mix(cold, mid, Math.max(0, (t - 0.5) / 0.5)) : mix(mid, hot, Math.min(1, (t - 1) / 0.5));
+  };
+  Sim.prototype.dots = function (arr, col) {
+    var c = this.ctx, i, p;
+    for (i = 0; i < arr.length; i++) {
+      p = arr[i];
+      c.beginPath(); c.arc(p.x, p.y, PR, 0, Math.PI * 2); c.fillStyle = col; c.fill(); c.lineWidth = 3; c.strokeStyle = '#1B1F3B'; c.stroke();
+      c.fillStyle = '#1B1F3B'; c.beginPath(); c.arc(p.x - 4, p.y - 1, 1.8, 0, Math.PI * 2); c.fill(); c.beginPath(); c.arc(p.x + 4, p.y - 1, 1.8, 0, Math.PI * 2); c.fill();
+    }
   };
   Sim.prototype.draw = function (now) {
-    var c = this.ctx, x0 = this.X0, y0 = this.Y0, W = this.W, H = this.H, i, p, s, R = this.R;
-    c.clearRect(0, 0, 620, 300);
-    c.fillStyle = '#FFFFFF'; c.fillRect(x0, y0, W, H);
-    c.lineWidth = 4; c.strokeStyle = '#1B1F3B'; c.strokeRect(x0, y0, W, H);
-    if (this.mode !== 'count') {
-      c.fillStyle = '#8A93C8'; c.fillRect(x0 + W, y0 - 4, 12, H + 8);
-      c.fillStyle = '#1B1F3B'; c.fillRect(x0 + W + 12, y0 + H / 2 - 5, 24, 10);
+    var c = this.ctx, cfg = this.cfg, k = this.kind, m = this.m, XR = this.XR, H = SY1 - SY0, i, s;
+    var single = k === 'count', block = k === 'press' || (k === 'temp' && cfg.block);
+    c.clearRect(0, 0, CW, CH); c.setLineDash([]);
+    c.fillStyle = '#FFF8D9'; c.fillRect(SX0, SY0, (single ? XR : m) - SX0, H);
+    if (!single) {
+      c.fillStyle = block ? (cfg.block === 'water' ? '#BFE3FF' : '#D5D9EA') : '#FFFFFF';
+      c.fillRect(m, SY0, XR - m, H);
+    }
+    c.lineWidth = 4; c.strokeStyle = '#1B1F3B';
+    var openL = k === 'lung', openR = (k === 'temp' && this.hasR) || k === 'leak' || (k === 'temp' && cfg.block === 'water');
+    c.beginPath(); c.moveTo(SX0, SY0); c.lineTo(XR, SY0); c.moveTo(SX0, SY1); c.lineTo(XR, SY1); c.stroke();
+    c.setLineDash(openL ? [9, 8] : []); c.beginPath(); c.moveTo(SX0, SY0); c.lineTo(SX0, SY1); c.stroke();
+    c.setLineDash(openR ? [9, 8] : []); c.beginPath(); c.moveTo(XR, SY0); c.lineTo(XR, SY1); c.stroke(); c.setLineDash([]);
+    if (k === 'syringe' || k === 'lung') { c.fillStyle = '#8A93C8'; c.fillRect(XR, SY0 - 4, 10, H + 8); c.fillStyle = '#1B1F3B'; c.fillRect(XR + 10, SY0 + H / 2 - 5, Math.max(0, CW - XR - 12), 10); }
+    if (!single) {
+      c.strokeStyle = '#D6336C'; c.lineWidth = 8; c.beginPath();
+      if (k === 'leak') { c.moveTo(m, SY0); c.lineTo(m, SY1 - 70); } else { c.moveTo(m, SY0); c.lineTo(m, SY1); }
+      c.stroke();
+    }
+    if (cfg.pop && this.v >= 0.9) {
+      c.fillStyle = '#1B1F3B'; c.save(); c.translate(XR - 150, SY0 - 16); c.rotate(-0.28); c.fillRect(0, -8, 150, 12); c.restore();
+      c.fillStyle = '#D6336C'; c.font = '700 30px "Jua", "Noto Sans KR", sans-serif'; c.textAlign = 'center'; c.fillText('펑!', XR - 60, 30);
     }
     c.strokeStyle = '#D6336C'; c.lineWidth = 3;
     for (i = 0; i < this.sparks.length; i++) {
-      s = this.sparks[i]; var k = (now - s.t) / 260, r1 = 6 + 10 * k, r2 = r1 + 7;
-      c.globalAlpha = 1 - k;
+      s = this.sparks[i]; var q = (now - s.t) / 280, r1 = 5 + 9 * q, r2 = r1 + 7; c.globalAlpha = 1 - q;
       for (var a = 0; a < 6; a++) { var an = a * Math.PI / 3; c.beginPath(); c.moveTo(s.x + Math.cos(an) * r1, s.y + Math.sin(an) * r1); c.lineTo(s.x + Math.cos(an) * r2, s.y + Math.sin(an) * r2); c.stroke(); }
     }
     c.globalAlpha = 1;
-    var col = this.color();
-    for (i = 0; i < this.ps.length; i++) {
-      p = this.ps[i];
-      c.beginPath(); c.arc(p.x, p.y, R, 0, Math.PI * 2); c.fillStyle = col; c.fill(); c.lineWidth = 3; c.strokeStyle = '#1B1F3B'; c.stroke();
-      c.fillStyle = '#1B1F3B'; c.beginPath(); c.arc(p.x - 4.2, p.y - 1, 1.9, 0, Math.PI * 2); c.fill(); c.beginPath(); c.arc(p.x + 4.2, p.y - 1, 1.9, 0, Math.PI * 2); c.fill();
+    this.dots(this.L, this.colorL());
+    if (this.hasR) { this.dots(this.Rp, '#C3CCF5'); }
+    c.font = '700 17px "Noto Sans KR", sans-serif'; c.fillStyle = '#1B1F3B'; c.textAlign = 'center';
+    var lx = single ? (SX0 + XR) / 2 : Math.max(SX0 + 86, Math.min((SX0 + m) / 2, m - 20));
+    c.fillText(cfg.inL, single ? lx : Math.max(SX0 + 4 + c.measureText(cfg.inL).width / 2, (SX0 + m) / 2), 24);
+    if (!single) {
+      var rl = block ? cfg.blockL : cfg.outL, rw = c.measureText(rl).width, rx = Math.min(CW - 6 - rw / 2, Math.max((m + XR) / 2, m + 14 + rw / 2));
+      var lw = c.measureText(cfg.inL).width, lcx = Math.max(SX0 + 4 + lw / 2, (SX0 + m) / 2);
+      if (rx - rw / 2 < lcx + lw / 2 + 14) { rx = lcx + lw / 2 + 14 + rw / 2; }
+      if (block) { c.fillText(rl, Math.min(CW - 6 - rw / 2, Math.max(rx, (m + XR) / 2)), SY0 + H / 2 + 6); } else { c.fillText(rl, Math.min(CW - 6 - rw / 2, rx), 24); }
+      c.fillStyle = '#D6336C'; var mw = c.measureText(cfg.mem).width;
+      c.fillText(cfg.mem, Math.max(6 + mw / 2, Math.min(CW - 6 - mw / 2, m)), CH - 14);
     }
-    var rate = Math.round(this.hits.length / 2), ma = this.root.querySelector('[data-m="a"]'), mb = this.root.querySelector('[data-m="b"]');
-    var fa = this.root.querySelector('[data-f="a"]'), fb = this.root.querySelector('[data-f="b"]');
-    if (this.mode === 'boyle') { ma.textContent = '부피'; fa.style.width = Math.round(W / this.WM * 100) + '%'; }
-    else if (this.mode === 'charles') { ma.textContent = '부피 (입자 빠르기: ' + (this.temp < 0.8 ? '느림' : this.temp < 1.2 ? '보통' : '빠름') + ')'; fa.style.width = Math.round(W / this.WM * 100) + '%'; }
-    else { ma.textContent = '입자 수 ' + this.ps.length + '개'; fa.style.width = Math.round(this.ps.length / 36 * 100) + '%'; }
-    mb.textContent = (this.mode === 'charles' ? '벽 충돌 1초에 약 ' : '압력: 벽 충돌 1초에 약 ') + rate + '번';
-    fb.style.width = Math.min(100, Math.round(rate / (this.mode === 'count' ? 60 : 50) * 100)) + '%';
+    var ma = this.root.querySelector('[data-m="a"]'), mb = this.root.querySelector('[data-m="b"]'), fa = this.root.querySelector('[data-f="a"]'), fb = this.root.querySelector('[data-f="b"]');
+    var wL = Math.max(30, (single ? XR : m) - SX0), wR = Math.max(30, XR - m), hot = k === 'temp' || k === 'leak';
+    var pIn = this.L.length * (hot ? this.T : 1) / wL, pOut = this.hasR ? this.Rp.length / wR : 0;
+    var pct = function (x, K) { return Math.max(3, Math.min(100, Math.round(x * K))) + '%'; };
+    var word = function (x, K) { var q = x * K; return q < 28 ? '적음' : q < 55 ? '보통' : '많음'; };
+    if (single) {
+      ma.textContent = '입자 수 ' + this.L.length + '개'; fa.style.width = Math.round(this.L.length / 36 * 100) + '%';
+      mb.textContent = '벽에 충돌하는 횟수: ' + word(pIn, 1700); fb.style.width = pct(pIn, 1700);
+    } else if (k === 'leak') {
+      ma.textContent = '봉지 속 입자 수 ' + this.L.length + '개'; fa.style.width = Math.round(this.L.length / 22 * 100) + '%';
+      mb.textContent = '입자 빠르기: ' + (this.T < 0.85 ? '느림' : this.T < 1.2 ? '보통' : '빠름'); fb.style.width = Math.round((this.T - 0.6) / 0.9 * 100) + '%';
+    } else if (this.hasR) {
+      ma.textContent = '안에서 미는 충돌: ' + word(pIn, 1100); fa.style.width = pct(pIn, 1100);
+      mb.textContent = '밖에서 누르는 충돌: ' + word(pOut, 1100); fb.style.width = pct(pOut, 1100);
+      fa.style.background = '#B8860B';
+    } else {
+      var vol = (m - SX0) / (SXM - SX0);
+      ma.textContent = '부피' + (k === 'temp' ? ' (입자 빠르기: ' + (this.T < 0.85 ? '느림' : this.T < 1.2 ? '보통' : '빠름') + ')' : ' (입자 수는 그대로 ' + this.L.length + '개)'); fa.style.width = Math.round(vol * 100) + '%';
+      mb.textContent = '안에서 미는 충돌: ' + word(pIn, 2000); fb.style.width = pct(pIn, 2000);
+    }
   };
 
   /* ================= 활동지 ================= */
