@@ -105,8 +105,9 @@
       '<li><span class="n">1</span><span><b>실험 고르기</b><br>준비할 수 있는 실험에 체크합니다. 선택은 이 기기에 저장됩니다.</span></li>' +
       '<li><span class="n">2</span><span><b>슬라이드 보기</b><br>고른 실험만 순서대로 보여 줍니다. 부스 태블릿에는 "이 부스만 보기"를 띄워 두세요.</span></li>' +
       '<li><span class="n">3</span><span><b>활동지 인쇄</b><br>고른 실험만, A4 한 장에 1·2·3·4·6칸 중에서 골라 인쇄합니다.</span></li>' +
-      '<li><span class="n">4</span><span><b>이 구성 공유하기</b><br>지금 고른 실험 구성을 주소와 QR 코드로 만듭니다. 학생이나 동료 선생님이 열면 같은 실험이 선택된 상태로 열립니다.</span></li>' +
-      '<li><span class="n">5</span><span><b>QR 코드 크게 보기</b><br>맨 위의 QR 코드를 누르면 크게 보입니다. 교실 화면에 띄워 학생들이 휴대폰으로 찍고 들어오게 하세요.</span></li></ol></section>';
+      '<li><span class="n">4</span><span><b>포스터 보기·인쇄</b><br>실험마다 "포스터 보기"로 부스용 포스터를 볼 수 있습니다. "포스터 인쇄"는 고른 실험의 포스터만 A4나 A3로 인쇄합니다.</span></li>' +
+      '<li><span class="n">5</span><span><b>이 구성 공유하기</b><br>지금 고른 실험 구성을 주소와 QR 코드로 만듭니다. 학생이나 동료 선생님이 열면 같은 실험이 선택된 상태로 열립니다.</span></li>' +
+      '<li><span class="n">6</span><span><b>QR 코드 크게 보기</b><br>맨 위의 QR 코드를 누르면 크게 보입니다. 교실 화면에 띄워 학생들이 휴대폰으로 찍고 들어오게 하세요.</span></li></ol></section>';
     h += '<div class="tools"><button class="btn sm" data-act="all">전체 선택</button><button class="btn sm" data-act="none">전체 해제</button><button class="btn sm" data-act="sample">예시 구성 (12개)</button></div>';
     GROUPS.forEach(function (g) {
       var c = CATS[g[0]], list = EX.filter(function (e) { return e.cat === g[0]; });
@@ -119,12 +120,12 @@
           '<label for="ck' + e.code + '"><div class="thumb" style="background:' + c.tint + '">' + art(e) + '</div>' +
           '<div><span class="code">' + e.code + '</span><span class="ttl">' + esc(e.title) + '</span></div><div class="hk">' + esc(e.hook) + '</div></label>' +
           '<div class="foot"><span>' + (e.level ? '난이도 ' + '●●●'.slice(0, e.level) + '○○○'.slice(0, 3 - e.level) : '선생님 시연') + ' · ' + (e.std === '보너스' ? '보너스' : e.std) + '</span>' +
-          '<a href="#slides/' + e.code + '">이 부스만 보기</a></div></div>';
+          '<span class="links"><a href="#slides/' + e.code + '">이 부스만 보기</a><a href="#poster/' + e.code + '">포스터 보기</a></span></div></div>';
       });
       h += '</div></section>';
     });
     h += '<p class="footnote">성취기준과 활동지 수준은 2022 개정 과학과 교육과정과 중학교 과학 1 교과서를 참고했습니다. 실험 전에 반드시 예비 실험을 하고, 안전 약속을 학생과 함께 확인하세요.</p></div>';
-    h += '<div class="bar"><span class="cnt" id="cnt"></span><a class="btn pri" href="#slides" id="goSlides">슬라이드 보기</a><a class="btn yel" href="#print" id="goPrint">활동지 인쇄</a><button class="btn" data-act="share">이 구성 공유하기</button></div>';
+    h += '<div class="bar"><span class="cnt" id="cnt"></span><a class="btn pri" href="#slides" id="goSlides">슬라이드 보기</a><a class="btn yel" href="#print" id="goPrint">활동지 인쇄</a><a class="btn" href="#posters" id="goPosters">포스터 인쇄</a><button class="btn" data-act="share">이 구성 공유하기</button></div>';
     app.innerHTML = h;
     var hq = qrCanvas(siteUrl(), 360); hq.setAttribute('role', 'img'); hq.setAttribute('aria-label', '이 사이트 주소 QR 코드');
     document.getElementById('hqr').appendChild(hq);
@@ -472,6 +473,7 @@
   function renderPrint() {
     stopSim(); document.body.style.overflow = '';
     if (!sel.length) { location.hash = '#home'; setTimeout(function () { toast('먼저 실험을 하나 이상 골라 주세요.'); }, 50); return; }
+    pageStyle('A4');
     var list = sel.map(function (c) { return BY[c]; }), pages = Math.ceil(list.length / layout);
     var h = '<div class="printwrap"><div class="ptools"><a class="btn sm" href="#home">처음으로</a>' +
       '<div class="grp" role="group" aria-label="A4 한 장에 넣을 부스 수">A4 한 장에 ' + [1, 2, 3, 4, 6].map(function (n) { return '<button class="btn sm" data-layout="' + n + '" aria-pressed="' + (n === layout) + '">' + n + '칸</button>'; }).join('') + '</div>' +
@@ -487,6 +489,61 @@
     document.getElementById('doPrint').onclick = function () { window.print(); };
   }
 
+  /* ================= 포스터 ================= */
+  var paper = 'A4';
+  function pageStyle(size) {
+    var st = document.getElementById('pagestyle');
+    if (!st) { st = document.createElement('style'); st.id = 'pagestyle'; document.head.appendChild(st); }
+    st.textContent = '@page { size: ' + size + ' portrait; margin: 0; }';
+  }
+  function withPosters(cb) {
+    if (window.GAS_POSTERS) { cb(); return; }
+    app.innerHTML = '<p style="padding:40px;font-size:18px" role="status">포스터를 불러오는 중입니다.</p>';
+    var sc = document.createElement('script'); sc.src = 'posters.js';
+    sc.onload = cb;
+    sc.onerror = function () { app.innerHTML = '<p style="padding:40px;font-size:18px">포스터 파일을 불러오지 못했습니다. <a href="#home">처음으로</a></p>'; };
+    document.head.appendChild(sc);
+  }
+  function fitPosters() {
+    var one = document.querySelector('.posters.one'), k;
+    document.querySelectorAll('.psheet').forEach(function (p) {
+      k = Math.min(1, (window.innerWidth - 32) / 1123);
+      if (one) { k = Math.min(k, Math.max(0.3, (window.innerHeight - 110) / 1587)); } else { k = Math.min(k, 0.62); }
+      p.style.setProperty('--ks', k.toFixed(4));
+    });
+  }
+  function renderPosters(code) {
+    stopSim(); document.body.style.overflow = '';
+    var one = code && BY[code] ? code : null;
+    if (!one && !sel.length) { location.hash = '#home'; setTimeout(function () { toast('먼저 실험을 하나 이상 골라 주세요.'); }, 50); return; }
+    withPosters(function () {
+      var list = one ? [BY[one]] : sel.map(function (c) { return BY[c]; });
+      pageStyle(paper);
+      var pick = '';
+      if (one) {
+        pick = '<label class="sr" for="pjump">다른 포스터 보기</label><select id="pjump">' + GROUPS.map(function (g) {
+          return '<optgroup label="' + g[1] + '">' + EX.filter(function (e) { return e.cat === g[0]; }).map(function (e) {
+            return '<option value="' + e.code + '"' + (e.code === one ? ' selected' : '') + '>' + e.code + ' ' + esc(e.title) + '</option>';
+          }).join('') + '</optgroup>';
+        }).join('') + '</select>';
+      }
+      var h = '<div class="printwrap p' + paper + '"><div class="ptools"><a class="btn sm" href="#home">처음으로</a>' + pick +
+        '<div class="grp" role="group" aria-label="인쇄할 용지 크기">용지 ' + ['A4', 'A3'].map(function (n) { return '<button class="btn sm" data-paper="' + n + '" aria-pressed="' + (n === paper) + '">' + n + '</button>'; }).join('') + '</div>' +
+        '<button class="btn pri sm" id="doPrint">' + (one ? '이 포스터 인쇄' : '포스터 ' + list.length + '장 인쇄') + '</button>' +
+        (one ? '<a class="btn sm" href="#slides/' + one + '">슬라이드 보기</a>' : '') +
+        '<span class="pinfo">' + (paper === 'A3' ? 'A3 프린터가 필요합니다. ' : 'A4에 맞게 줄여서 인쇄합니다. ') + '인쇄 설정에서 여백 없음, 배경 그래픽 켜기를 선택하세요.</span></div>' +
+        '<div class="posters' + (one ? ' one' : '') + '">' + list.map(function (e) {
+          return '<section class="psheet" aria-label="' + esc(e.code + ' ' + e.title) + ' 포스터"><div class="pin">' + window.GAS_POSTERS[e.code] + '</div></section>';
+        }).join('') + '</div></div>';
+      app.innerHTML = h;
+      fitPosters();
+      app.querySelectorAll('[data-paper]').forEach(function (b) { b.onclick = function () { paper = b.getAttribute('data-paper'); renderPosters(one); }; });
+      document.getElementById('doPrint').onclick = function () { window.print(); };
+      var pj = document.getElementById('pjump'); if (pj) { pj.onchange = function () { location.hash = '#poster/' + this.value; }; }
+    });
+  }
+  window.addEventListener('resize', fitPosters);
+
   /* ================= 라우터 ================= */
   function route() {
     closeModal();
@@ -495,6 +552,8 @@
     if (document.fullscreenElement && hsh.indexOf('slides') !== 0) { document.exitFullscreen(); }
     if (hsh.indexOf('slides') === 0) { renderSlides(hsh.split('/')[1]); }
     else if (hsh === 'print') { renderPrint(); }
+    else if (hsh === 'posters') { renderPosters(null); }
+    else if (hsh.indexOf('poster/') === 0) { renderPosters(hsh.split('/')[1]); }
     else { renderHome(); }
     window.scrollTo(0, 0);
   }
