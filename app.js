@@ -10,7 +10,7 @@
     ['D', '선생님 시연', '선생님이 앞에서 보여 주는 실험'],
     ['X', '보너스 미션', '성취기준 밖의 원리가 섞인 도전 과제. 궁금증을 남기는 용도']
   ];
-  var SAMPLE = ['P1', 'P2', 'P4', 'P3', 'B2', 'B3', 'B4', 'B6', 'C1', 'C2', 'C8', 'C9'];
+  var SAMPLE = ['P1', 'P2', 'P4', 'P3', 'B2', 'B3', 'B4', 'B6', 'C1', 'C2', 'C7', 'C8'];
   var KEY = 'gasbooth.selection.v1';
   var app = document.getElementById('app');
   var sim = null, toastTimer = null;
