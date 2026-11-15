@@ -48,11 +48,17 @@
   }
   function closeModal() { var m = document.querySelector('.modal-bg'); if (m) { m.remove(); } }
   function shareModal() {
+    qrModal('이 구성 공유하기', '지금 고른 실험 ' + sel.length + '개가 선택된 상태로 열리는 주소입니다. QR 코드를 화면에 띄우거나 인쇄해서 학생에게 보여 주세요.', shareUrl());
+  }
+  function siteModal() {
+    qrModal('휴대폰으로 열기', '휴대폰 카메라로 QR 코드를 비추면 이 사이트가 열립니다. 교실 화면에 크게 띄워 두세요.', siteUrl());
+  }
+  function qrModal(title, desc, url) {
     closeModal();
-    var url = shareUrl(), bg = document.createElement('div');
+    var bg = document.createElement('div');
     bg.className = 'modal-bg';
-    bg.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mdt"><h2 id="mdt">이 구성 공유하기</h2>' +
-      '<p>지금 고른 실험 ' + sel.length + '개가 선택된 상태로 열리는 주소입니다. QR 코드를 화면에 띄우거나 인쇄해서 학생에게 보여 주세요.</p>' +
+    bg.innerHTML = '<div class="modal" role="dialog" aria-modal="true" aria-labelledby="mdt"><h2 id="mdt">' + title + '</h2>' +
+      '<p>' + desc + '</p>' +
       '<div class="qrbig" id="qrbig"></div><label class="sr" for="surl">공유 주소</label><input id="surl" readonly value="' + esc(url) + '">' +
       '<div class="mbtns"><button class="btn pri sm" id="mcopy">주소 복사</button><button class="btn yel sm" id="msave">QR 이미지 저장</button><button class="btn sm" id="mclose">닫기</button></div>' +
       '<p class="mmsg" id="mmsg" role="status"></p></div>';
@@ -89,7 +95,7 @@
     h += '<header class="hero"><svg class="dots" aria-hidden="true" viewBox="0 0 300 170">' + face(40, 50, 18) + face(120, 110, 26) + face(210, 46, 14) + face(262, 120, 20) + face(170, 150, 10) + '</svg>' +
       '<div class="htext"><span class="tag">중학교 1학년 과학 · 기체의 성질</span><h1>기체 실험 부스</h1>' +
       '<p>압력, 보일 법칙, 샤를 법칙을 눈으로 보고 입자로 설명하는 실험 ' + EX.length + '가지. 할 실험만 골라서 슬라이드로 설명하고, 고른 실험의 활동지만 인쇄하세요.</p></div>' +
-      '<div class="hqr"><div id="hqr"></div><span>휴대폰으로 열기</span></div></header>';
+      '<button type="button" class="hqr" data-act="siteqr" aria-label="사이트 QR 코드 크게 보기"><span id="hqr"></span><b>휴대폰으로 열기</b><small>누르면 크게 보여요</small></button></header>';
     h += '<section class="panel"><h2>오늘의 도착점 (2022 개정 교육과정 성취기준)</h2><div class="stds">';
     [['9과06-01', 'P'], ['9과06-02', 'B'], ['9과06-03', 'C']].forEach(function (s) {
       h += '<div class="std" style="background:' + CATS[s[1]].tint + '"><b style="color:' + CATS[s[1]].main + '">[' + s[0] + '] ' + CATS[s[1]].name.replace(' 부스', '') + '</b>' + esc(STDS[s[0]]) + '</div>';
@@ -99,7 +105,8 @@
       '<li><span class="n">1</span><span><b>실험 고르기</b><br>준비할 수 있는 실험에 체크합니다. 선택은 이 기기에 저장됩니다.</span></li>' +
       '<li><span class="n">2</span><span><b>슬라이드 보기</b><br>고른 실험만 순서대로 보여 줍니다. 부스 태블릿에는 "이 부스만 보기"를 띄워 두세요.</span></li>' +
       '<li><span class="n">3</span><span><b>활동지 인쇄</b><br>고른 실험만, A4 한 장에 1·2·3·4·6칸 중에서 골라 인쇄합니다.</span></li>' +
-      '<li><span class="n">4</span><span><b>이 구성 공유하기</b><br>지금 고른 실험 구성을 주소와 QR 코드로 만듭니다. 학생이나 동료 선생님이 열면 같은 실험이 선택된 상태로 열립니다.</span></li></ol></section>';
+      '<li><span class="n">4</span><span><b>이 구성 공유하기</b><br>지금 고른 실험 구성을 주소와 QR 코드로 만듭니다. 학생이나 동료 선생님이 열면 같은 실험이 선택된 상태로 열립니다.</span></li>' +
+      '<li><span class="n">5</span><span><b>QR 코드 크게 보기</b><br>맨 위의 QR 코드를 누르면 크게 보입니다. 교실 화면에 띄워 학생들이 휴대폰으로 찍고 들어오게 하세요.</span></li></ol></section>';
     h += '<div class="tools"><button class="btn sm" data-act="all">전체 선택</button><button class="btn sm" data-act="none">전체 해제</button><button class="btn sm" data-act="sample">예시 구성 (12개)</button></div>';
     GROUPS.forEach(function (g) {
       var c = CATS[g[0]], list = EX.filter(function (e) { return e.cat === g[0]; });
@@ -157,6 +164,7 @@
     } else if (act === 'all') { setSel(EX.map(function (e) { return e.code; })); }
     else if (act === 'none') { setSel([]); }
     else if (act === 'sample') { setSel(SAMPLE); toast('예시 구성 12개를 선택했습니다.'); }
+    else if (act === 'siteqr') { siteModal(); }
     else if (act === 'share') {
       if (!sel.length) { toast('먼저 실험을 하나 이상 골라 주세요.'); return; }
       shareModal();
