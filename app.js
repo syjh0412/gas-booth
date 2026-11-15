@@ -60,7 +60,7 @@
       '<li><span class="n">1</span><span><b>실험 고르기</b><br>준비할 수 있는 실험에 체크합니다. 선택은 이 기기에 저장됩니다.</span></li>' +
       '<li><span class="n">2</span><span><b>슬라이드 보기</b><br>고른 실험만 순서대로 보여 줍니다. 부스 태블릿에는 "이 부스만 보기"를 띄워 두세요.</span></li>' +
       '<li><span class="n">3</span><span><b>활동지 인쇄</b><br>고른 실험만, A4 한 장에 1·2·3·4·6칸 중에서 골라 인쇄합니다.</span></li>' +
-      '<li><span class="n">4</span><span><b>링크 복사</b><br>선택한 구성을 주소로 만들어 학생이나 동료 선생님과 나눕니다.</span></li></ol></section>';
+      '<li><span class="n">4</span><span><b>이 구성 공유하기</b><br>지금 고른 실험 구성을 주소로 복사합니다. 학생이나 동료 선생님이 그 주소를 열면 같은 실험이 선택된 상태로 열립니다.</span></li></ol></section>';
     h += '<div class="tools"><button class="btn sm" data-act="all">전체 선택</button><button class="btn sm" data-act="none">전체 해제</button><button class="btn sm" data-act="sample">예시 구성 (12개)</button></div>';
     GROUPS.forEach(function (g) {
       var c = CATS[g[0]], list = EX.filter(function (e) { return e.cat === g[0]; });
@@ -78,7 +78,7 @@
       h += '</div></section>';
     });
     h += '<p class="footnote">성취기준과 활동지 수준은 2022 개정 과학과 교육과정과 중학교 과학 1 교과서를 참고했습니다. 실험 전에 반드시 예비 실험을 하고, 안전 약속을 학생과 함께 확인하세요.</p></div>';
-    h += '<div class="bar"><span class="cnt" id="cnt"></span><a class="btn pri" href="#slides" id="goSlides">슬라이드 보기</a><a class="btn yel" href="#print" id="goPrint">활동지 인쇄</a><button class="btn" data-act="share">링크 복사</button></div>';
+    h += '<div class="bar"><span class="cnt" id="cnt"></span><a class="btn pri" href="#slides" id="goSlides">슬라이드 보기</a><a class="btn yel" href="#print" id="goPrint">활동지 인쇄</a><button class="btn" data-act="share">이 구성 공유하기</button></div>';
     app.innerHTML = h;
     updateCount();
   }
@@ -120,7 +120,7 @@
       if (!sel.length) { toast('먼저 실험을 하나 이상 골라 주세요.'); return; }
       var url = shareUrl();
       var fallback = function () { toast('아래 주소를 복사하세요.<input readonly value="' + esc(url) + '" aria-label="공유 주소">', 12000); var i = document.querySelector('.toast input'); if (i) { i.select(); } };
-      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(function () { toast('선택한 구성의 링크를 복사했습니다.'); }, fallback); } else { fallback(); }
+      if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(url).then(function () { toast('주소를 복사했습니다. 카페 글이나 메신저에 붙여 넣으면, 받은 사람이 열었을 때 지금 고른 실험 ' + sel.length + '개가 선택된 상태로 열립니다.<input readonly value="' + esc(url) + '" aria-label="공유 주소">', 9000); }, fallback); } else { fallback(); }
     }
   });
 
@@ -451,6 +451,8 @@
     window.scrollTo(0, 0);
   }
   window.addEventListener('hashchange', route);
-  if (/[?&]s=/.test(location.search)) { saveSel(); }
+  var shared = /[?&]s=/.test(location.search);
+  if (shared) { saveSel(); }
   route();
+  if (shared && sel.length && !location.hash.replace('#', '').replace('home', '')) { toast('공유받은 구성입니다. 실험 ' + sel.length + '개가 선택되어 있습니다.', 6000); }
 })();
