@@ -408,7 +408,7 @@
       '<div class="meters"><div class="meter"><span data-m="a"></span><div class="track"><div class="fill" data-f="a"></div></div></div>' +
       '<div class="meter"><span data-m="b"></span><div class="track"><div class="fill" data-f="b" style="background:#D6336C"></div></div></div></div>';
     this.cv = root.querySelector('canvas'); this.ctx = this.cv.getContext('2d'); this.slider = root.querySelector('input');
-    this.bub = []; this.L = []; this.Rp = []; this.hIn = []; this.hOut = []; this.hAll = []; this.sparks = [];
+    this.bub = []; this.esc = []; this.L = []; this.Rp = []; this.hIn = []; this.hOut = []; this.hAll = []; this.sparks = [];
     this.XR = SXM; this.m = SXM; this.T = 1; this.NL = 0; this.NR = 0;
     this.hasR = { pump: 1, syringe: 1, lung: 1, leak: 1 }[this.kind] === 1 || (this.kind === 'temp' && !cfg.block);
     this.apply(cfg.start / 100); this.XR = this.XRt; this.m = this.meq(); this.sync(true);
@@ -429,7 +429,7 @@
     else if (k === 'doll') {
       this.T = 0.5 + v; this.XRt = 590; if (this.NLd === undefined) { this.NLd = 10; }
       var cap = Math.max(4, Math.round(10 / this.T));
-      if (cap < this.NLd) { for (var bi = 0; bi < this.NLd - cap; bi++) { this.bub.push({ x: 600 + Math.random() * 26, y: SY1 - 26, t: performance.now() + bi * 140 }); } this.NLd = cap; sndTick(620, 0.04); }
+      if (cap < this.NLd) { this.NLd = cap; sndTick(620, 0.04); }
       this.NL = this.NLd;
     }
     else if (k === 'leak') { this.T = 0.6 + 0.9 * v; this.NL = Math.round(18 / (0.8 + 1.2 * v)); this.NR = 7; }
@@ -451,7 +451,12 @@
       var a = Math.random() * Math.PI * 2, x = edge === 'L' ? xa + PR + 2 : edge === 'R' ? xb - PR - 2 : xa + PR + Math.random() * Math.max(1, xb - xa - 2 * PR);
       arr.push({ x: x, y: SY0 + PR + Math.random() * (SY1 - SY0 - 2 * PR), dx: Math.cos(a), dy: Math.sin(a) });
     }
-    if (arr.length > n) { arr.length = n; }
+    if (arr.length > n) {
+      if (arr === this.L && (this.kind === 'doll' || this.kind === 'leak')) {
+        var t0 = performance.now(), j = 0;
+        while (arr.length > n) { var q = arr.pop(); this.esc.push({ x: q.x, y: q.y, t: t0 + j * 260 }); j++; }
+      } else { arr.length = n; }
+    }
   };
   Sim.prototype.sync = function (first) {
     if (this.kind === 'lung') { this.NL = Math.max(3, Math.round((this.m - SX0) * this.NR / 300)); }
@@ -533,6 +538,17 @@
     }
     c.globalAlpha = 1;
     this.dots(this.L, this.colorL());
+    if (this.esc.length) {
+      var D = 1700, doll = k === 'doll', hx = doll ? XR - PR : m, hy = doll ? SY1 - 23 : SY1 - 35, ox = doll ? XR + 28 : m + 46, self2 = this;
+      this.esc = this.esc.filter(function (e2) { return now - e2.t < D; });
+      this.esc.forEach(function (e2) {
+        var q2 = Math.max(0, (now - e2.t) / D), px, py, al = 1;
+        if (q2 < 0.45) { var a2 = q2 / 0.45; px = e2.x + (hx - e2.x) * a2; py = e2.y + (hy - e2.y) * a2; }
+        else if (q2 < 0.6) { var b2 = (q2 - 0.45) / 0.15; px = hx + (ox - hx) * b2; py = hy; }
+        else { var c2 = (q2 - 0.6) / 0.4; px = ox + (doll ? 0 : 40 * c2); py = hy - (doll ? 190 : 60) * c2; al = 1 - c2; }
+        c.globalAlpha = al; self2.dots([{ x: px, y: py }], self2.colorL()); c.globalAlpha = 1;
+      });
+    }
     if (this.hasR) { this.dots(this.Rp, '#C3CCF5'); }
     c.font = '700 17px "Noto Sans KR", sans-serif'; c.fillStyle = '#1B1F3B'; c.textAlign = 'center';
     var lx = single ? (SX0 + XR) / 2 : Math.max(SX0 + 86, Math.min((SX0 + m) / 2, m - 20));
